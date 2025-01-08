@@ -13,7 +13,6 @@ class CustomUser(AbstractUser):
 class UniqueURL(models.Model):
     url = models.URLField(unique=True)
     owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    content=models.TextField(null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
