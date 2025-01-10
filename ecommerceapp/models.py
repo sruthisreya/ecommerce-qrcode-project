@@ -11,6 +11,7 @@ class CustomUser(AbstractUser):
 
 class UniqueURL(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="unique_urls")
+    description=models.CharField(max_length=100)
     url = models.URLField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
@@ -27,9 +28,11 @@ class QRCode(models.Model):
     
 
 class Payment(models.Model):
+    STATUS_CHOICES = [('PENDING', 'Pending'), ('COMPLETED', 'Completed'), ('FAILED', 'Failed')]
     user = models.ForeignKey(UniqueURL, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     transaction_id = models.CharField(max_length=100)
+    status=models.CharField(max_length=100,choices=STATUS_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -38,7 +41,6 @@ class Payment(models.Model):
 
 
 class ContactQuery(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
     name = models.CharField(max_length=100)
     email = models.EmailField()
     message = models.TextField()

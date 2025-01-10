@@ -32,6 +32,24 @@ class ProtectedView(APIView):
     
 
 
+class GenerateurlView(APIView):
+    permission_classes=[IsAuthenticated]
+    def post(self,request):
+        description=request.data.get("description","")
+        url=request.data.get("url","")
+        if not url:
+            return Response({"error": "URL is required"}, status=400)
+        try:
+            unique_url = UniqueURL.objects.create(user=request.user, url=url,description=description)
+            return Response({'message':'unique url created successfully'})
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+
+
+
+
+
+
 class GenerateQRCodeZipview(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -74,26 +92,42 @@ class GenerateQRCodeZipview(APIView):
         response = HttpResponse(zip_buffer, content_type='application/zip')
         response['Content-Disposition'] = 'attachment; filename="qr_codes.zip"'
         return response
-    
 
 
-class QrcodeView(APIView):
-    permission_classes=[IsAuthenticated]
-    def get(self,request):
-        uniqueurl=UniqueURL.objects.filter(user=request.user)
-        serializer=UniqueurlSerializer(uniqueurl,many=True)
+
+
+
+
+class UniqueurlmanagementView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        obj=UniqueURL.objects.all()
+        serializer = UniqueurlSerializer(obj, many=True)
         return Response(serializer.data)
+    
+    def post(self,request):
+        data=request.data
+        serializer = UniqueurlSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors)
+    
+    def put(self,request,id):
+        data=request.data
+        obj=UniqueURL.objects.get(id=id)
+        serializer=UniqueurlSerializer(obj,data=data,partial=False)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        
+    def delete(self,request,id):
+        data=request.data
+        obj=UniqueurlSerializer.objects.get(id=id)
+        obj.delete()
+        return Response({'mesage':'person associated with urls deleted'})
 
 
-class DeleteurlView(APIView):
-    permission_classes=[IsAuthenticated]
-    def delete(self,request,url_id):
-        try:
-            unique_url=UniqueURL.objects.get(id=url_id,user=request.user)
-        except UniqueURL.DoesNotExist:
-            return Response({"error":"url not found"},status=status.HTTP_404_NOT_FOUND)
-        unique_url.delete()
-        return Response({"success":"url deleted"},status=status.HTTP_200_OK)
     
 
     
