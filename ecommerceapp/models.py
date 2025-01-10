@@ -9,6 +9,7 @@ class CustomUser(AbstractUser):
         return self.email
     
 
+
 class UniqueURL(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="unique_urls")
     description=models.CharField(max_length=100)
