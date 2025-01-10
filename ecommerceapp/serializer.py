@@ -1,7 +1,7 @@
 
 
 from rest_framework import serializers
-from .models import CustomUser
+from .models import CustomUser,UniqueURL,QRCode,Payment,ContactQuery
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -20,3 +20,23 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             email=validated_data['email']
         )
         return user 
+    
+class UniqueurlSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=UniqueURL
+        fields='__all__'
+
+class QRcodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=QRCode
+        fields='__all__'
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Payment
+        fields='__all__'
+
+class ContactSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=ContactQuery
+        fields='__all__'
