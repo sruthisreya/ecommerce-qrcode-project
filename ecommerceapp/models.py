@@ -15,18 +15,21 @@ class UniqueURL(models.Model):
     description=models.CharField(max_length=100)
     url = models.URLField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    qr_code_image = models.ImageField(upload_to="qr_codes/")
     def __str__(self):
         return self.url
 
+class CartItem(models.Model):
+    cart = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    unique_url = models.ForeignKey(UniqueURL, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __star__(self):
+        return self.quantity
 
 
-class QRCode(models.Model):
-    unique_url = models.OneToOneField(UniqueURL, on_delete=models.CASCADE, related_name="qr_code")
-    qr_code_image = models.ImageField(upload_to="qr_codes/")
 
-    def __str__(self):
-        return f"qr code for {self.unique_url.url}"
-    
 
 class Payment(models.Model):
     STATUS_CHOICES = [('PENDING', 'Pending'), ('COMPLETED', 'Completed'), ('FAILED', 'Failed')]

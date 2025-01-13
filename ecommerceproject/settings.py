@@ -149,7 +149,7 @@ SIMPLE_JWT={
     'BLACKLIST_AFTER_ROTATION':True,
 }
 
-MEDIA_URL='/media'
+MEDIA_URL='/media/'
 MEDIA_ROOT=BASE_DIR / 'media'
 
 
@@ -161,3 +161,26 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
 DEFAULT_FROM_EMAIL = 'your-email@example.com'
+
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'qrcodedatabase', 
+        'USER': 'postgres', 
+        'PASSWORD': 'postgres2025',  
+        'HOST': 'localhost', 
+        'PORT': '5432',  
+    }
+}
+
+
+
+DEFAULT_FROM_EMAIL = 'admin@example.com'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your_email@example.com'
+EMAIL_HOST_PASSWORD = 'your_email_password'

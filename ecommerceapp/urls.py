@@ -1,12 +1,13 @@
 from django.urls import path
-from .views import RegisterUser,ProtectedView,GenerateQRCodeZipview,DeleteurlView,QrcodeView
-
+from .views import RegisterUser,ProtectedView,download_qr_codes,ContactQueryView,UniqueurlmanagementView
+from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
 
 urlpatterns = [
     path('RegisterUser/', RegisterUser.as_view(),name='RegisterUser'),
     path('ProtectedView/', ProtectedView.as_view(),name='ProtectedView'),
-    path('GenerateQRCodeZipview/', GenerateQRCodeZipview.as_view(),name='GenerateQRCodeZipview'),
-    # path('DeleteurlView/', DeleteurlView.as_view(),name='DeleteurlView'),
-    # path('QrcodeView/', QrcodeView.as_view(),name='QrcodeView')
-
+    path('token/',TokenObtainPairView.as_view(),name='token'),
+    path('refresh/',TokenRefreshView.as_view(),name='refresh'),
+    path('download-qr-codes/', download_qr_codes, name='download_qr_codes'),
+    path('ContactQueryView/',ContactQueryView.as_view(),name='ContactQueryView'),
+    path('UniqueurlmanagementView/',UniqueurlmanagementView.as_view(),name='UniqueurlmanagementView'),
 ]
