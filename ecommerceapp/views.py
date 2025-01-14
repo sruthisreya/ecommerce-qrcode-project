@@ -2,7 +2,7 @@
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from ecommerceapp.serializer import UserRegisterSerializer,UniqueurlSerializer,ContactSerializer
+from ecommerceapp.serializer import UserRegisterSerializer,UniqueurlSerializer,ContactSerializer,CartitemSerializer
 from rest_framework.response import Response
 from django.http import HttpResponse
 from django.shortcuts import get_list_or_404
@@ -10,7 +10,7 @@ import qrcode
 import io 
 import zipfile
 from rest_framework import status
-from .models import UniqueURL,CustomUser
+from .models import UniqueURL,CustomUser,CartItem
 
 
 # Create your views here.
@@ -52,38 +52,72 @@ def download_qr_codes(request):
 
 
 
+class UniqueurlView(APIView):
+    permission_classes=[IsAuthenticated]
+    def get(self,request):
+        user=request.user
+        user_urls = UniqueURL.objects.filter(user=user)
+        serializer = UniqueurlSerializer(user_urls, many=True)
+        return Response(serializer.data)
 
 
+class AddurlsTocartView(APIView):
+    permission_classes=[IsAuthenticated]
+    def post(self,request):
+        user=request,user
+        unique_urls=UniqueURL.objects.filter(user=user)
+        if not unique_urls.exists():
+            return Response({"detail": "No URLs found for this user."}, status=status.HTTP_404_NOT_FOUND)
+        cart_item = CartItem.objects.create(user=user, quantity=len(unique_urls))
+        cart_item.unique_url.set(unique_urls)
+        cart_item.save()
+        return Response({
+            "message": "URLs added to cart successfully",
+            "cart_item": CartitemSerializer(cart_item).data
+        }, status=status.HTTP_201_CREATED)
 
 
-class UniqueurlmanagementView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        obj=UniqueURL.objects.all()
-        serializer = UniqueurlSerializer(obj, many=True)
+    def get(self,request):
+        obj=CartItem.objects.all()
+        serializer=CartitemSerializer(obj,many=True)
         return Response(serializer.data)
     
-    def post(self,request):
-        data=request.data
-        serializer = UniqueurlSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors)
+
+
     
-    def put(self,request,id):
-        data=request.data
-        obj=UniqueURL.objects.get(id=id)
-        serializer=UniqueurlSerializer(obj,data=data,partial=False)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
+
+
+
+
+
+# class UniqueurlmanagementView(APIView):
+#     permission_classes = [IsAuthenticated]
+#     def get(self, request):
+#         obj=UniqueURL.objects.all()
+#         serializer = UniqueurlSerializer(obj, many=True)
+#         return Response(serializer.data)
+    
+#     def post(self,request):
+#         data=request.data
+#         serializer = UniqueurlSerializer(data=data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         return Response(serializer.errors)
+    
+#     def put(self,request,id):
+#         data=request.data
+#         obj=UniqueURL.objects.get(id=id)
+#         serializer=UniqueurlSerializer(obj,data=data,partial=False)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
         
-    def delete(self,request,id):
-        data=request.data
-        obj=UniqueurlSerializer.objects.get(id=id)
-        obj.delete()
-        return Response({'mesage':'person associated with urls deleted'})
+#     def delete(self,request,id):
+#         data=request.data
+#         obj=UniqueurlSerializer.objects.get(id=id)
+#         obj.delete()
+#         return Response({'mesage':'person associated with urls deleted'})
 
 
     
