@@ -1,20 +1,30 @@
 from django.contrib import admin
-from .models import CustomUser,UniqueURL,QRCode,Payment,ContactQuery
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from .models import CustomUser,UniqueURL,Payment,ContactQuery
+
 
 # Register your models here.
+
+
+@admin.action(description="generate qr codes")
+def generate_qr_codes(modeladmin, request, queryset):
+    selected_ids = queryset.values_list('id', flat=True)
+    ids = ",".join(map(str, selected_ids))
+    return HttpResponseRedirect(reverse('download_qr_codes') + f"?ids={ids}")
+
+
+
+
 class Useradmin(admin.ModelAdmin):
     list_display=['username','email','phn_no']
-admin.site.register(CustomUser,Useradmin)
-
+    actions=[generate_qr_codes]
+admin.site.register(CustomUser,Useradmin)  
 
 class UniqueurlAdmin(admin.ModelAdmin):
     list_display=['description','url','created_at']
 admin.site.register(UniqueURL,UniqueurlAdmin)
 
-
-class QrCodeAdmin(admin.ModelAdmin):
-    list_display=['unique_url','qr_code_image']
-admin.site.register(QRCode, QrCodeAdmin)
 
 
 class PaymentAdmin(admin.ModelAdmin):

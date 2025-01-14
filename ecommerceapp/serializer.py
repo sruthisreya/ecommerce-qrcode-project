@@ -1,7 +1,7 @@
 
 
 from rest_framework import serializers
-from .models import CustomUser,UniqueURL,QRCode,Payment,ContactQuery
+from .models import CustomUser,UniqueURL,Payment,ContactQuery
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -9,14 +9,14 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model=CustomUser
-        fields=['id','username','password','email','phone_no']
+        fields=['id','username','password','email','phn_no']
 
 
     def create(self,validated_data):
         user=CustomUser.objects.create_user(
             username=validated_data['username'],
             password=validated_data['password'],
-            phone_no=validated_data['phone_no'],
+            phn_no=validated_data['phn_no'],
             email=validated_data['email']
         )
         return user 
@@ -26,10 +26,7 @@ class UniqueurlSerializer(serializers.ModelSerializer):
         model=UniqueURL
         fields='__all__'
 
-class QRcodeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=QRCode
-        fields='__all__'
+
 
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
