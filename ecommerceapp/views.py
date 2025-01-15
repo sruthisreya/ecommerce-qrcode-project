@@ -5,7 +5,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from ecommerceapp.serializer import UserRegisterSerializer,UniqueurlSerializer,ContactSerializer,CartitemSerializer
 from rest_framework.response import Response
 from django.http import HttpResponse
-from django.shortcuts import get_list_or_404
+from django.shortcuts import get_list_or_404,get_object_or_404
 import qrcode
 import io 
 import zipfile
@@ -15,6 +15,7 @@ from .models import UniqueURL,CustomUser,CartItem
 
 # Create your views here.
 
+# stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class RegisterUser(APIView):
     permission_classes=[AllowAny]
@@ -75,49 +76,29 @@ class AddurlsTocartView(APIView):
             "message": "URLs added to cart successfully",
             "cart_item": CartitemSerializer(cart_item).data
         }, status=status.HTTP_201_CREATED)
-
-
     def get(self,request):
-        obj=CartItem.objects.all()
-        serializer=CartitemSerializer(obj,many=True)
-        return Response(serializer.data)
+        user=request.user
+        cartitm=CartItem.objects.filter(user=user,is_closed=False)
+        if not cartitm.exists():
+            return Response({'message':'no active cart item found'},status=status.HTTP_404_NOT_FOUND)
+        serializer=CartitemSerializer(cartitm,many=True)
+        return Response(serializer.data)    
+
+class DeleteurlView(APIView):
+    permission_classes=[IsAuthenticated]
+    def delete(self,request,url_id):
+        user=request.user
+        cartitm=CartItem.objects.filter(user=user,is_closed=False).first()
+        if not cartitm:
+            return Response({"detail": "No open cart found."}, status=status.HTTP_404_NOT_FOUND)
+        unique_url = get_object_or_404(UniqueURL, id=url_id)
+        if unique_url not in cartitm.unique_url.all():
+            return Response({"detail": "URL not found in cart."}, status=status.HTTP_404_NOT)
+        cartitm.unique_url.remove(unique_url)
+        cartitm.save()
+        return Response({"message": "URL removed from cart successfully"}, status=status.HTTP_200_OK)
     
 
-
-    
-
-
-
-
-
-# class UniqueurlmanagementView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     def get(self, request):
-#         obj=UniqueURL.objects.all()
-#         serializer = UniqueurlSerializer(obj, many=True)
-#         return Response(serializer.data)
-    
-#     def post(self,request):
-#         data=request.data
-#         serializer = UniqueurlSerializer(data=data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data)
-#         return Response(serializer.errors)
-    
-#     def put(self,request,id):
-#         data=request.data
-#         obj=UniqueURL.objects.get(id=id)
-#         serializer=UniqueurlSerializer(obj,data=data,partial=False)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data)
-        
-#     def delete(self,request,id):
-#         data=request.data
-#         obj=UniqueurlSerializer.objects.get(id=id)
-#         obj.delete()
-#         return Response({'mesage':'person associated with urls deleted'})
 
 
     

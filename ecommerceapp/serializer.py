@@ -24,7 +24,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 class UniqueurlSerializer(serializers.ModelSerializer):
     class Meta:
         model=UniqueURL
-        fields='__all__'
+        fields=['id','url','created_at']
 
 
 
@@ -43,7 +43,7 @@ class CartitemSerializer(serializers.ModelSerializer):
     # url_id=UniqueurlSerializer(many=True)
     class Meta:
         model=CartItem
-        fields='__all__'
+        fields=['id','user','unique_url','quantity','created_at']
 
 
 class DetailsSerializer(serializers.ModelSerializer):
