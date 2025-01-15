@@ -1,7 +1,7 @@
 
 
 from rest_framework import serializers
-from .models import CustomUser,UniqueURL,Payment,ContactQuery
+from .models import CustomUser,UniqueURL,Payment,ContactQuery,CartItem,Details
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -36,4 +36,17 @@ class PaymentSerializer(serializers.ModelSerializer):
 class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         model=ContactQuery
+        fields='__all__'
+
+
+class CartitemSerializer(serializers.ModelSerializer):
+    # url_id=UniqueurlSerializer(many=True)
+    class Meta:
+        model=CartItem
+        fields='__all__'
+
+
+class DetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Details
         fields='__all__'
