@@ -12,6 +12,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+from environs import Env
+
+#initialize environs
+env =Env()
+env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -154,33 +159,28 @@ MEDIA_ROOT=BASE_DIR / 'media'
 
 
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = ''
-EMAIL_HOST_PASSWORD = ''
-DEFAULT_FROM_EMAIL = 'your-email@example.com'
-
 
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'qrcodedatabase', 
-        'USER': 'postgres', 
-        'PASSWORD': 'postgres2025',  
-        'HOST': 'localhost', 
-        'PORT': '5432',  
+        'ENGINE':env('DB_ENGINE'),
+        'NAME':env( 'DB_NAME'),
+        'USER':env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'), 
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
     }
 }
 
 
 
-DEFAULT_FROM_EMAIL = 'admin@example.com'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'your_email@example.com'
-EMAIL_HOST_PASSWORD = 'your_email_password'
+EMAIL_HOST = env.str('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = env.int('EMAIL_PORT', default=587) 
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)  
+EMAIL_HOST_USER = env.str('EMAIL_HOST_USER', default=False)
+EMAIL_HOST_PASSWORD = env.str('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = env.str('DEFAULT_FROM_EMAIL', default='admin999@gmail.com')
+
+
+
