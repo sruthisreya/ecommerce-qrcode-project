@@ -77,4 +77,3 @@ class ContactQuery(models.Model):
 
 
 
-    

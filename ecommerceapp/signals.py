@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from .models import ContactQuery
 from django.conf import settings
 from django.core.mail import send_mail
-# from .utils import send_email
+
 
 @receiver(post_save, sender=ContactQuery)
 def send_contact_email_to_admin(sender, instance, created, **kwargs):
