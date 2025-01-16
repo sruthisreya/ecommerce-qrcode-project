@@ -31,17 +31,16 @@ def generate_50_urls(modeladmin,request,queryset):
 generate_50_urls.short_description = "Generated 50 random URLs for all users"
 
 
+def set_fixed_price(modeladmin,request,queryset):
+    fixed_price=100.0
+    updated_count=queryset.update(cost=fixed_price)
+    modeladmin.message_user(request, f'Successfully updated {updated_count} URL(s) to the fixed price of {fixed_price}')
+
 
 class UniqueurlAdmin(admin.ModelAdmin):
     list_display=['url','created_at','cost']
     actions=[generate_50_urls]
 admin.site.register(UniqueURL,UniqueurlAdmin)
-
-
-def set_fixed_price(modeladmin,request,queryset):
-    fixed_price=100.0
-    updated_count=queryset.update(cost=fixed_price)
-    modeladmin.message_user(request, f'Successfully updated {updated_count} URL(s) to the fixed price of {fixed_price}')
 
 
 
