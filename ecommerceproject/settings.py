@@ -162,16 +162,29 @@ MEDIA_ROOT=BASE_DIR / 'media'
 
 
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE':env('DB_ENGINE', 'django.db.backends.postgresql'),
+#         'NAME':env( 'DB_NAME','Qrcodegeneratordatabase'), 
+#         'USER':env('DB_USER','postgres'), 
+#         'PASSWORD': env('DB_PASSWORD','postgres2025'),  
+#         'HOST': env('DB_HOST','localhost'), 
+#         'PORT': env('DB_PORT','5432'),  
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'Qrcodegeneratordatabase', 
-        'USER': 'postgres', 
-        'PASSWORD': 'postgres2025',  
-        'HOST': 'localhost', 
-        'PORT': '5432',  
+        'ENGINE':env('DB_ENGINE'),
+        'NAME':env( 'DB_NAME'),
+        'USER':env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'), 
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
     }
 }
+
+
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = env.str('EMAIL_HOST', default='smtp.gmail.com')

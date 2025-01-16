@@ -38,10 +38,10 @@ class UniqueurlAdmin(admin.ModelAdmin):
 admin.site.register(UniqueURL,UniqueurlAdmin)
 
 
-# def set_fixed_price(modeladmin,request,queryset):
-#     fixed_price=100.0
-#     updated_count=queryset.update(cost=fixed_price)
-#     modeladmin.message_user(request, f'Successfully updated {updated_count} URL(s) to the fixed price of {fixed_price}')
+def set_fixed_price(modeladmin,request,queryset):
+    fixed_price=100.0
+    updated_count=queryset.update(cost=fixed_price)
+    modeladmin.message_user(request, f'Successfully updated {updated_count} URL(s) to the fixed price of {fixed_price}')
 
 
 
