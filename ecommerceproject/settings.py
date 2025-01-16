@@ -161,18 +161,6 @@ MEDIA_ROOT=BASE_DIR / 'media'
 
 
 
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE':env('DB_ENGINE', 'django.db.backends.postgresql'),
-#         'NAME':env( 'DB_NAME','Qrcodegeneratordatabase'), 
-#         'USER':env('DB_USER','postgres'), 
-#         'PASSWORD': env('DB_PASSWORD','postgres2025'),  
-#         'HOST': env('DB_HOST','localhost'), 
-#         'PORT': env('DB_PORT','5432'),  
-#     }
-# }
-
 DATABASES = {
     'default': {
         'ENGINE':env('DB_ENGINE'),
