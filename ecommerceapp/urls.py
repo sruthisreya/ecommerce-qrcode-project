@@ -10,7 +10,7 @@ urlpatterns = [
     path('download-qr-codes/', download_qr_codes, name='download_qr_codes'),
     path('UniqueurlView/',UniqueurlView.as_view(),name='UniqueurlView'),
     path('ContactQueryView/',ContactQueryView.as_view(),name='ContactQueryView'),
-    path('AddurlsTocartView/',AddurlsTocartView.as_view(),name='AddurlsTocartView'),
+    path('AddurlsTocartView/<int:url_id>',AddurlsTocartView.as_view(),name='AddurlsTocartView'),
     path('DeleteurlView/<int:url_id>',DeleteurlView.as_view(),name='DeleteurlView'),
     
     # path('UniqueurlmanagementView/',UniqueurlmanagementView.as_view(),name='UniqueurlmanagementView'),

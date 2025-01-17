@@ -4,7 +4,9 @@ from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from ecommerceapp.serializer import UserRegisterSerializer,UniqueurlSerializer,ContactSerializer,CartitemSerializer
 from rest_framework.response import Response
+from django.core.mail import send_mail
 from django.http import HttpResponse
+from django.conf import settings
 from django.shortcuts import get_list_or_404,get_object_or_404
 import qrcode
 import io 
@@ -12,27 +14,28 @@ import zipfile
 from rest_framework import status
 from .models import UniqueURL,CustomUser,CartItem
 
-
 # Create your views here.
 
 # stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class RegisterUser(APIView):
     permission_classes=[AllowAny]
+
     def post(self,request):
         serializer=UserRegisterSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data,status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 class ProtectedView(APIView):
     authentication_classes=[JWTAuthentication]
     permission_classes=[IsAuthenticated]
+
     def get(self,request):
         return Response({"message":"you are authenticated"})
     
-
 
 def download_qr_codes(request):
     ids = request.GET.get('ids', '')
@@ -52,9 +55,10 @@ def download_qr_codes(request):
     return response
 
 
-
 class UniqueurlView(APIView):
     permission_classes=[IsAuthenticated]
+    authentication_classes=[JWTAuthentication]
+
     def get(self,request):
         user=request.user
         user_urls = UniqueURL.objects.filter(user=user)
@@ -64,18 +68,25 @@ class UniqueurlView(APIView):
 
 class AddurlsTocartView(APIView):
     permission_classes=[IsAuthenticated]
-    def post(self,request):
-        user=request,user
-        unique_urls=UniqueURL.objects.filter(user=user)
+    authentication_classes=[JWTAuthentication]
+
+    def post(self,request,url_id):
+        user=request.user
+        unique_urls=UniqueURL.objects.filter(user=user,id=url_id)
         if not unique_urls.exists():
             return Response({"detail": "No URLs found for this user."}, status=status.HTTP_404_NOT_FOUND)
-        cart_item = CartItem.objects.create(user=user, quantity=len(unique_urls))
+        total_price = sum(url.cost * 1 for url in unique_urls)
+        cart_item = CartItem.objects.create(user=user, quantity=len(unique_urls),total_price=total_price)
         cart_item.unique_url.set(unique_urls)
+
+
         cart_item.save()
+  
         return Response({
             "message": "URLs added to cart successfully",
             "cart_item": CartitemSerializer(cart_item).data
         }, status=status.HTTP_201_CREATED)
+
     def get(self,request):
         user=request.user
         cartitm=CartItem.objects.filter(user=user,is_closed=False)
@@ -84,8 +95,13 @@ class AddurlsTocartView(APIView):
         serializer=CartitemSerializer(cartitm,many=True)
         return Response(serializer.data)    
 
+
+
+
 class DeleteurlView(APIView):
     permission_classes=[IsAuthenticated]
+    authentication_classes=[JWTAuthentication]
+
     def delete(self,request,url_id):
         user=request.user
         cartitm=CartItem.objects.filter(user=user,is_closed=False).first()
@@ -98,25 +114,12 @@ class DeleteurlView(APIView):
         cartitm.save()
         return Response({"message": "URL removed from cart successfully"}, status=status.HTTP_200_OK)
     
-
-
-
     
 class ContactQueryView(APIView):
+
     def post(self,request):
         serializer = ContactSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response({"message":"your feedback has been submitted successfully"},status=status.HTTP_201_CREATED)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-
-
-    
-    
-    
-        
-
-
-
-
-        

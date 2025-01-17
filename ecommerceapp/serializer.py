@@ -40,11 +40,11 @@ class ContactSerializer(serializers.ModelSerializer):
 
 
 class CartitemSerializer(serializers.ModelSerializer):
-    # url_id=UniqueurlSerializer(many=True)
-    class Meta:
-        model=CartItem
-        fields=['id','user','unique_url','quantity','created_at']
+    unique_url = UniqueurlSerializer(many=True)  
 
+    class Meta:
+        model = CartItem
+        fields = ['id', 'user', 'unique_url', 'quantity', 'total_price', 'created_at']
 
 class DetailsSerializer(serializers.ModelSerializer):
     class Meta:

@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 
 
+#signals for feedback
 @receiver(post_save, sender=ContactQuery)
 def send_contact_email_to_admin(sender, instance, created, **kwargs):
     if created:
