@@ -44,7 +44,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'ecommerceapp'
+    'django_admin_extra_buttons',
+    'ecommerceapp',
 ]
 AUTH_USER_MODEL='ecommerceapp.CustomUser'
 
