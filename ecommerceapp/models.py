@@ -16,6 +16,11 @@ class UniqueURL(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     cost=models.DecimalField(max_digits=10,decimal_places=2)
     # qr_code_image = models.ImageField(upload_to="qr_codes/")
+
+    def save(self,*args,**kwargs):
+        if self.cost is None or self.cost==0.0:
+            self.cost=100
+        super().save(*args,**kwargs)
     def __str__(self):
         return self.url
 
@@ -46,12 +51,12 @@ class CartItem(models.Model):
     total_price=models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def calculate_total(self):
-        self.total_price=sum[(url.cost*self.quantity for url in self.unique_url.all())]
-        self.save()
+    # def calculate_total(self):
+    #     self.total_price=sum(url.cost*self.quantity for url in self.unique_url.all())
+    #     self.save()
 
     def __str__(self):
-        return self.quantity
+        return f"Cart for {self.user.email} with {self.quantity} items"
 
 
 

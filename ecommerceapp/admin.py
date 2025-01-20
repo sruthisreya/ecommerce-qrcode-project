@@ -14,21 +14,24 @@ def generate_qr_codes(modeladmin, request, queryset):
     return HttpResponseRedirect(reverse('download_qr_codes') + f"?ids={ids}")
 
 
-class Useradmin(admin.ModelAdmin):
-    list_display=['username','email','phn_no']
-    actions=[generate_qr_codes]
-admin.site.register(CustomUser,Useradmin)  
-
-
 def generate_random_url(length=10):
      return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 def generate_50_urls(modeladmin,request,queryset):
-    users=CustomUser.objects.all()
+    users=CustomUser.objects.filter(is_superuser=False)
     for user in users:
         for _ in range(50):
             random_url = f"https://example.com/{generate_random_url()}"
             UniqueURL.objects.create(user=user,url=random_url)
-generate_50_urls.short_description = "Generated 50 random URLs for all users"
+generate_50_urls.short_description = "Generated random urls"
+
+
+class Useradmin(admin.ModelAdmin):
+    list_display=['username','email','phn_no']
+    actions=[generate_qr_codes]
+    actions=[generate_50_urls]
+admin.site.register(CustomUser,Useradmin)  
+
+
 
 
 def set_fixed_price(modeladmin,request,queryset):
@@ -38,8 +41,8 @@ def set_fixed_price(modeladmin,request,queryset):
 
 
 class UniqueurlAdmin(admin.ModelAdmin):
-    list_display=['url','created_at','cost']
-    actions=[generate_50_urls]
+    list_display=['user','url','created_at','cost']
+    # actions=[generate_50_urls]
 admin.site.register(UniqueURL,UniqueurlAdmin)
 
 
@@ -53,5 +56,7 @@ class ContactQueryAdmin(admin.ModelAdmin):
     list_display=['name','email','message','created_at']
 admin.site.register(ContactQuery,ContactQueryAdmin)
 
-admin.site.register(CartItem)
+class CartItemAdmin(admin.ModelAdmin):
+    list_display=['user','quantity','total_price']
+admin.site.register(CartItem, CartItemAdmin)
 admin.site.register(Details)
