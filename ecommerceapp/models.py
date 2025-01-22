@@ -1,35 +1,36 @@
+import uuid
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-# Create your models here.
 class CustomUser(AbstractUser):
-    email = models.EmailField(max_length=100,unique=True)
+    email = models.EmailField(max_length=100, unique=True)
     phn_no=models.CharField(max_length=100)
+
     def __str__(self):
         return self.email
     
 
-
 class UniqueURL(models.Model):
-    url = models.URLField()
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name="unique_urls")
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(CustomUser, blank=True, null=True, on_delete=models.SET_NULL, related_name="unique_url_user")
     created_at = models.DateTimeField(auto_now_add=True)
     cost=models.DecimalField(max_digits=10,decimal_places=2)
-    # qr_code_image = models.ImageField(upload_to="qr_codes/")
 
     def save(self,*args,**kwargs):
         if self.cost is None or self.cost==0.0:
             self.cost=100
         super().save(*args,**kwargs)
+
     def __str__(self):
-        return self.url
+        return str(self.id)
 
 
 class Details(models.Model):
+    unique_url = models.OneToOneField(UniqueURL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     description = models.TextField()
     closed_date = models.DateField(auto_now=True)
-    unique_url = models.ForeignKey(UniqueURL, on_delete=models.CASCADE, unique=True)
 
     def __str__(self):
         return self.title
@@ -51,13 +52,8 @@ class CartItem(models.Model):
     total_price=models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # def calculate_total(self):
-    #     self.total_price=sum(url.cost*self.quantity for url in self.unique_url.all())
-    #     self.save()
-
     def __str__(self):
         return f"Cart for {self.user.email} with {self.quantity} items"
-
 
 
 class Payment(models.Model):
@@ -68,6 +64,7 @@ class Payment(models.Model):
     status=models.CharField(max_length=100,choices=STATUS_CHOICES)
     total_amount=models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
+
     def __str__(self):
         return f"Payment {self.transaction_id}"
     
@@ -77,8 +74,6 @@ class ContactQuery(models.Model):
     email = models.EmailField()
     message = models.TextField()
     created_at = models.DateTimeField(auto_now=True)
+    
     def __str__(self):
         return f"Query from {self.email}"
-
-
-

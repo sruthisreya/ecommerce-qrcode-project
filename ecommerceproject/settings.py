@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 from datetime import timedelta
 from environs import Env
@@ -44,7 +45,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'django_admin_extra_buttons',
     'ecommerceapp',
 ]
 AUTH_USER_MODEL='ecommerceapp.CustomUser'
@@ -64,7 +64,7 @@ ROOT_URLCONF = 'ecommerceproject.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -85,8 +85,12 @@ WSGI_APPLICATION = 'ecommerceproject.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE':env('DB_ENGINE'),
+        'NAME':env( 'DB_NAME'),
+        'USER':env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'), 
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
     }
 }
 
@@ -133,7 +137,6 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENDTICATION_CLASSES':(
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -142,10 +145,6 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
 }
-
-
-
-
 
 
 SIMPLE_JWT={
@@ -159,22 +158,6 @@ MEDIA_URL='/media/'
 MEDIA_ROOT=BASE_DIR / 'media'
 
 
-
-
-
-DATABASES = {
-    'default': {
-        'ENGINE':env('DB_ENGINE'),
-        'NAME':env( 'DB_NAME'),
-        'USER':env('DB_USER'),
-        'PASSWORD': env('DB_PASSWORD'), 
-        'HOST': env('DB_HOST'),
-        'PORT': env('DB_PORT'),
-    }
-}
-
-
-
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = env.str('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = env.int('EMAIL_PORT', default=587) 
@@ -182,6 +165,3 @@ EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
 EMAIL_HOST_USER = env.str('EMAIL_HOST_USER', default=False)
 EMAIL_HOST_PASSWORD = env.str('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env.str('DEFAULT_FROM_EMAIL', default='admin999@gmail.com')
-
-
-

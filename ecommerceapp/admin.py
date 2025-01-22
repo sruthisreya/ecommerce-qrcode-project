@@ -1,46 +1,41 @@
 from django.contrib import admin
-from django.http import HttpResponseRedirect
-from django.urls import reverse
+from django.http import HttpResponseRedirect,HttpResponse
+# from django.urls import reverse
 import string
+import io
+import zipfile
+from django.urls import path
+import qrcode
+from django.contrib import messages
 import random
-from admin_extra_buttons.api import button
+# from admin_extra_buttons import api
+# from admin_extra_buttons.api import button
 from .models import CustomUser,UniqueURL,Payment,ContactQuery,CartItem,Details
 
 
 # Register your models here.
 @admin.action(description="generate qr codes")
 def generate_qr_codes(modeladmin, request, queryset):
-    selected_ids = queryset.values_list('id', flat=True)
-    ids = ",".join(map(str, selected_ids))
-    return HttpResponseRedirect(reverse('download_qr_codes') + f"?ids={ids}")
-
-
-def generate_random_url(length=10):
-     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
-def generate_50_urls(modeladmin,request,queryset):
-    users=CustomUser.objects.filter(is_superuser=False)
-    for user in users:
-        for _ in range(50):
-            random_url = f"https://example.com/{generate_random_url()}"
-            UniqueURL.objects.create(user=user,url=random_url)
-generate_50_urls.short_description = "Generated random urls"
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w') as zip_file:
+        for obj in queryset:
+            qr = qrcode.make(f"http://localhost:8000/api/vi/url/{obj.id}/details")
+            qr_io = io.BytesIO()
+            qr.save(qr_io, format='PNG')
+            qr_io.seek(0)
+            zip_file.writestr(f"{obj.username}_QRCode.png", qr_io.read())
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="qr_codes.zip"'
+    messages.success(request, f"QR codes for {queryset.count()} records were successfully generated and downloaded.")
+    return response
 
 
 class Useradmin(admin.ModelAdmin):
     list_display=['username','email','phn_no']
     actions=[generate_qr_codes]
 
-    @button(label="generate 50 urls")
-    def generate_50_urls(self,request):
-        generate_50_urls(self,request,None)
-        self.message_user(request,"50 urls generated successfully..")
-        # url=reverse(generate_random_url)
-        return HttpResponseRedirect(request.path)
 admin.site.register(CustomUser,Useradmin)  
-
-
-
-
 
 
 def set_fixed_price(modeladmin,request,queryset):
@@ -50,10 +45,10 @@ def set_fixed_price(modeladmin,request,queryset):
 
 
 class UniqueurlAdmin(admin.ModelAdmin):
-    list_display=['user','url','created_at','cost']
-    # actions=[generate_50_urls]
-admin.site.register(UniqueURL,UniqueurlAdmin)
+    list_display=['user','created_at','cost']
+    change_list_template = "urls/url.html"
 
+admin.site.register(UniqueURL,UniqueurlAdmin)
 
 
 class PaymentAdmin(admin.ModelAdmin):
@@ -69,3 +64,45 @@ class CartItemAdmin(admin.ModelAdmin):
     list_display=['user','quantity','total_price']
 admin.site.register(CartItem, CartItemAdmin)
 admin.site.register(Details)
+
+
+
+# # admin.py
+# from django.contrib import admin
+# from django.urls import path
+# from django.http import HttpResponseRedirect
+# from django_admin_extra_buttons.mixins import ExtraButtonsMixin
+# from .models import CustomUser
+# from .utils import generate_50_urls  # Assuming your generate_50_urls function is defined elsewhere
+
+# # Define your custom view
+# def generate_50_urls_action(modeladmin, request, queryset):
+#     # Call your custom function
+#     generate_50_urls(modeladmin, request, queryset)
+#     modeladmin.message_user(request, "50 URLs generated successfully!")
+#     return HttpResponseRedirect(request.path)
+
+# # Admin class using ExtraButtonsMixin
+# class UserAdmin(ExtraButtonsMixin, admin.ModelAdmin):
+#     list_display = ['username', 'email', 'phn_no']
+#     actions = [generate_50_urls_action]
+
+#     extra_buttons = [
+#         {
+#             'label': 'Generate 50 URLs',  # The label for the button
+#             'url': 'generate_50_urls_action',  # The action to call
+#             'icon': 'fa fa-qrcode',  # Optional: FontAwesome icon
+#             'confirm': True,  # Optional: Ask for confirmation before triggering the action
+#         }
+#     ]
+
+#     def get_urls(self):
+#         # Add custom URL for your custom action
+#         urls = super().get_urls()
+#         custom_urls = [
+#             path('generate_50_urls_action/', self.admin_site.admin_view(generate_50_urls_action)),
+#         ]
+#         return custom_urls + urls
+
+# # Register your model and the custom admin class
+# admin.site.register(CustomUser, UserAdmin)

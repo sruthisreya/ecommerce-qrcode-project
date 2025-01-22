@@ -2,17 +2,16 @@
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from ecommerceapp.serializer import UserRegisterSerializer,UniqueurlSerializer,ContactSerializer,CartitemSerializer
+from ecommerceapp.serializer import UserRegisterSerializer,UniqueurlSerializer,ContactSerializer,CartitemSerializer,DetailsSerializer
 from rest_framework.response import Response
 from django.core.mail import send_mail
-from django.http import HttpResponse
+from django.http import HttpResponseRedirect
 from django.conf import settings
-from django.shortcuts import get_list_or_404,get_object_or_404
-import qrcode
-import io 
-import zipfile
+from django.shortcuts import get_object_or_404
+from .serializer import CustomTokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework import status
-from .models import UniqueURL,CustomUser,CartItem
+from .models import UniqueURL,CustomUser,CartItem,Details
 
 # Create your views here.
 
@@ -36,91 +35,21 @@ class ProtectedView(APIView):
     def get(self,request):
         return Response({"message":"you are authenticated"})
     
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 
-def download_qr_codes(request):
-    ids = request.GET.get('ids', '')
-    ids = ids.split(',')
-    queryset = get_list_or_404(CustomUser, id__in=ids)
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, 'w') as zip_file:
-        for obj in queryset:
-            qr = qrcode.make(f"ID: {obj.id}, UserName: {obj.username}")
-            qr_io = io.BytesIO()
-            qr.save(qr_io, format='PNG')
-            qr_io.seek(0)
-            zip_file.writestr(f"{obj.username}_QRCode.png", qr_io.read())
-    buffer.seek(0)
-    response = HttpResponse(buffer, content_type='application/zip')
-    response['Content-Disposition'] = 'attachment; filename="qr_codes.zip"'
-    return response
-
-
+#to view all urls
 class UniqueurlView(APIView):
     permission_classes=[IsAuthenticated]
     authentication_classes=[JWTAuthentication]
 
     def get(self,request):
         user=request.user
-        user_urls = UniqueURL.objects.filter(user=user)
+        user_urls=UniqueURL.objects.all()
         serializer = UniqueurlSerializer(user_urls, many=True)
         return Response(serializer.data)
 
-
-class AddurlsTocartView(APIView):
-    permission_classes=[IsAuthenticated]
-    authentication_classes=[JWTAuthentication]
-
-    def post(self, request):
-        user = request.user
-        url_ids = request.data.get('url_ids', [])    
-        if not url_ids:
-            return Response({"detail": "No URL IDs provided."}, status=status.HTTP_400_BAD_REQUEST)
-        unique_urls = UniqueURL.objects.filter(user=user, id__in=url_ids)
-
-        if not unique_urls.exists():
-            return Response({"detail": "No URLs found for the provided IDs."}, status=status.HTTP_404_NOT_FOUND)
-
-        total_price = sum(url.cost for url in unique_urls)
-        cart_item = CartItem.objects.create(user=user, quantity=len(unique_urls), total_price=total_price)
-        cart_item.unique_url.set(unique_urls)
-
-        cart_item.save()
-        send_mail(
-            subject="URLs added to the cart",
-            message=(
-                f"Dear {user.username} You have successfully added {len(unique_urls)} URLs to your cart"
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-        )
-
-        send_mail(
-            subject="Urls added to the cart",
-            message=(
-                f"User {user.username} has added {len(unique_urls)} URLs to the cart"
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=['admin999@gmail.com'],
-        )
-
-
-        return Response({
-            "message": "URLs added to cart successfully",
-            "cart_item": CartitemSerializer(cart_item).data
-        }, status=status.HTTP_201_CREATED)
-
-
-    def get(self,request):
-        user=request.user
-        cartitm=CartItem.objects.filter(user=user,is_closed=False)
-        if not cartitm.exists():
-            return Response({'message':'no active cart item found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=CartitemSerializer(cartitm,many=True)
-        return Response(serializer.data)    
-
-
-
-
+#delete urls
 class DeleteurlView(APIView):
     permission_classes=[IsAuthenticated]
     authentication_classes=[JWTAuthentication]
@@ -137,8 +66,35 @@ class DeleteurlView(APIView):
         # cartitm.save()
         return Response({"message": "URL removed from cart successfully"}, status=status.HTTP_200_OK)
     
+
+class OpencartView(APIView):
+    permission_classes=[IsAuthenticated]
+    authentication_classes=[JWTAuthentication]
+
+    def get(self,request):
+        user=request.user
+        cart_item=CartItem.objects.filter(user=user,is_closed=False).first()
+        if not cart_item:
+            return Response({"detail": "No open cart found."}, status=status.HTTP_404_NOT_FOUND)
+        remaining_urls=cart_item.unique_url.all()
+        updated_quantity = remaining_urls.count()
+        updated_total_price = sum(url.cost for url in remaining_urls)
+        cart_item.quantity = updated_quantity
+        cart_item.total_price = updated_total_price
+        cart_item.save()
+        serializedurls=UniqueurlSerializer(remaining_urls,many=True)
+        return Response({
+            "cart_id": cart_item.id,
+            "total_price": cart_item.total_price,
+            "quantity": cart_item.quantity,
+            "remaining_urls": serializedurls.data
+        }, status=status.HTTP_200_OK)
+
     
+  #feedback  
 class ContactQueryView(APIView):
+    permission_classes=[IsAuthenticated]
+    authentication_classes=[JWTAuthentication]
 
     def post(self,request):
         serializer = ContactSerializer(data=request.data)
@@ -146,3 +102,97 @@ class ContactQueryView(APIView):
             serializer.save()
             return Response({"message":"your feedback has been submitted successfully"},status=status.HTTP_201_CREATED)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+def create_50_urls(request):
+    for i in range(50):
+        UniqueURL.objects.create()
+    return HttpResponseRedirect("../../")
+
+#payment
+class Paymentcreateview(APIView):
+    permission_classes=[IsAuthenticated]
+    authentication_classes=[JWTAuthentication]
+    def post(self,request):
+        serializer=DetailsSerializer(data=request.data)
+        if serializer.is_valid():
+            payment=serializer.save()
+            return Response({"message": f"Payment {payment.transaction_id} created successfully!", "payment_id": payment.id}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+#add urls to cart
+class AddurlsTocartView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    def post(self, request):
+        user = request.user
+        url_ids = request.data.get('url_ids', []) 
+        if not url_ids:
+            return Response({"detail": "No URL IDs provided."}, status=status.HTTP_400_BAD_REQUEST)
+        from uuid import UUID
+        try:
+            url_ids = [UUID(id_str) for id_str in url_ids]
+        except ValueError:
+            return Response({"detail": "Invalid URL ID format."}, status=status.HTTP_400_BAD_REQUEST)
+        unique_urls = UniqueURL.objects.filter(id__in=url_ids)
+        if not unique_urls.exists():
+            return Response({"detail": "No URLs found for the provided IDs."}, status=status.HTTP_404_NOT_FOUND)
+        total_price = sum(url.cost for url in unique_urls)
+        cart_item = CartItem.objects.create(user=user, quantity=len(unique_urls), total_price=total_price)
+        cart_item.unique_url.set(unique_urls)
+        cart_item.save()
+        send_mail(
+            subject="URLs added to the cart",
+            message=(
+                f"Dear {user.username} You have successfully added {len(unique_urls)} URLs to your cart"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+        )
+        send_mail(
+            subject="Urls added to the cart",
+            message=(
+                f"User {user.username} has added {len(unique_urls)} URLs to the cart"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=['sreyamaya84@gmail.com'],
+        )
+        return Response({
+            "message": "URLs added to cart successfully!",
+            "cart_id": cart_item.id,
+            "total_price": cart_item.total_price,
+            "quantity": cart_item.quantity
+        }, status=status.HTTP_201_CREATED)
+    
+
+class DetailsView(APIView):
+    permission_classes=[IsAuthenticated]
+    authentication_classes=[JWTAuthentication]
+    def post(self,request,url_id):
+        unique_url = UniqueURL.objects.get(id=url_id)
+        data=request.data
+        data['unique_url']=unique_url.id
+        serializer=DetailsSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def get(self,request,url_id):
+        detail=Details.objects.all()
+        serializer=DetailsSerializer(detail)
+        return Response(serializer.data)
+    
+    def put(self, request, url_id):
+        try:
+            unique_url = UniqueURL.objects.get(id=url_id)
+            details = Details.objects.get(unique_url=unique_url)
+        except (UniqueURL.DoesNotExist, Details.DoesNotExist):
+            return Response({"detail": "Details or Unique URL not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = DetailsSerializer(details, data=request.data, partial=True) 
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
