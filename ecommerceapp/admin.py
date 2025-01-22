@@ -3,6 +3,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 import string
 import random
+from admin_extra_buttons.api import button
 from .models import CustomUser,UniqueURL,Payment,ContactQuery,CartItem,Details
 
 
@@ -28,8 +29,16 @@ generate_50_urls.short_description = "Generated random urls"
 class Useradmin(admin.ModelAdmin):
     list_display=['username','email','phn_no']
     actions=[generate_qr_codes]
-    actions=[generate_50_urls]
+
+    @button(label="generate 50 urls")
+    def generate_50_urls(self,request):
+        generate_50_urls(self,request,None)
+        self.message_user(request,"50 urls generated successfully..")
+        # url=reverse(generate_random_url)
+        return HttpResponseRedirect(request.path)
 admin.site.register(CustomUser,Useradmin)  
+
+
 
 
 

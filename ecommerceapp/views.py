@@ -70,22 +70,45 @@ class AddurlsTocartView(APIView):
     permission_classes=[IsAuthenticated]
     authentication_classes=[JWTAuthentication]
 
-    def post(self,request,url_id):
-        user=request.user
-        unique_urls=UniqueURL.objects.filter(user=user,id=url_id)
+    def post(self, request):
+        user = request.user
+        url_ids = request.data.get('url_ids', [])    
+        if not url_ids:
+            return Response({"detail": "No URL IDs provided."}, status=status.HTTP_400_BAD_REQUEST)
+        unique_urls = UniqueURL.objects.filter(user=user, id__in=url_ids)
+
         if not unique_urls.exists():
-            return Response({"detail": "No URLs found for this user."}, status=status.HTTP_404_NOT_FOUND)
-        total_price = sum(url.cost * 1 for url in unique_urls)
-        cart_item = CartItem.objects.create(user=user, quantity=len(unique_urls),total_price=total_price)
+            return Response({"detail": "No URLs found for the provided IDs."}, status=status.HTTP_404_NOT_FOUND)
+
+        total_price = sum(url.cost for url in unique_urls)
+        cart_item = CartItem.objects.create(user=user, quantity=len(unique_urls), total_price=total_price)
         cart_item.unique_url.set(unique_urls)
 
-
         cart_item.save()
-  
+        send_mail(
+            subject="URLs added to the cart",
+            message=(
+                f"Dear {user.username} You have successfully added {len(unique_urls)} URLs to your cart"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+        )
+
+        send_mail(
+            subject="Urls added to the cart",
+            message=(
+                f"User {user.username} has added {len(unique_urls)} URLs to the cart"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=['admin999@gmail.com'],
+        )
+
+
         return Response({
             "message": "URLs added to cart successfully",
             "cart_item": CartitemSerializer(cart_item).data
         }, status=status.HTTP_201_CREATED)
+
 
     def get(self,request):
         user=request.user
@@ -111,7 +134,7 @@ class DeleteurlView(APIView):
         if unique_url not in cartitm.unique_url.all():
             return Response({"detail": "URL not found in cart."}, status=status.HTTP_404_NOT)
         cartitm.unique_url.remove(unique_url)
-        cartitm.save()
+        # cartitm.save()
         return Response({"message": "URL removed from cart successfully"}, status=status.HTTP_200_OK)
     
     
