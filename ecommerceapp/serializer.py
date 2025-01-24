@@ -1,7 +1,8 @@
 
 
 from rest_framework import serializers
-from .models import CustomUser,UniqueURL,Payment,ContactQuery,CartItem,Details
+from .models import CustomUser,UniqueURL,Payment,ContactQuery,CartItem,Details,Images
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -21,10 +22,17 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         )
         return user 
     
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        return {**super().validate(attrs), "message": "login successful."}
+
+
 class UniqueurlSerializer(serializers.ModelSerializer):
     class Meta:
         model=UniqueURL
-        fields=['id','url','created_at']
+        fields=['id','created_at']
+        # fields='__all__'
 
 
 
@@ -49,4 +57,9 @@ class CartitemSerializer(serializers.ModelSerializer):
 class DetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model=Details
-        fields='__all__'
+        fields=['unique_url','title','description','created_at']
+
+class ImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Images
+        fields = ['file','detail','created_at']

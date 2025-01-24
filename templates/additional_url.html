@@ -1,0 +1,12 @@
+{% extends 'admin/change_list.html' %}
+
+{% block object-tools  %}
+    {{ block.super }}
+    <div id="additional-urls">
+        <h3>Additional Actions: </h3>
+        <div>
+            {% block links %}{% endblock  %}
+        </div>
+    </div>
+    <br/>
+{% endblock  %}

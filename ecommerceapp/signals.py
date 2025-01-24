@@ -15,9 +15,8 @@ def send_contact_email_to_admin(sender, instance, created, **kwargs):
             f"Details:\n"
             f"Name: {instance.name}\n"
             f"Email: {instance.email}\n"
-            f"phone Number: {instance.phn_no}\n"
-            f"Message:\n{instance.messages}\n\n"
-            f"Submitted on: {instance.created_date}"
+            f"Message:\n{instance.message}\n\n"
+            f"Submitted on: {instance.created_at}"
         )
         send_mail(
             subject,
