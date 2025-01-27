@@ -14,6 +14,7 @@ class CustomUser(AbstractUser):
 class UniqueURL(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(CustomUser, blank=True, null=True, on_delete=models.SET_NULL, related_name="unique_url_user")
+    in_cart = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     cost=models.DecimalField(max_digits=10,decimal_places=2)
 
@@ -60,6 +61,7 @@ class Payment(models.Model):
     STATUS_CHOICES = [('PENDING', 'Pending'), ('COMPLETED', 'Completed'), ('FAILED', 'Failed')]
     user = models.ForeignKey(UniqueURL, on_delete=models.CASCADE)
     cart=models.ForeignKey(CartItem,on_delete=models.CASCADE)
+    checkout_id = models.CharField(max_length=100)
     transaction_id = models.CharField(max_length=100)
     status=models.CharField(max_length=100,choices=STATUS_CHOICES)
     total_amount=models.IntegerField()

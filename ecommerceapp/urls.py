@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterUser,ProtectedView,ContactQueryView,UniqueurlView,AddurlsTocartView,DeleteurlView, create_50_urls,Paymentcreateview,OpencartView,CustomTokenObtainPairView,DetailsView
+from .views import RegisterUser,ProtectedView,ContactQueryView,UniqueurlView,AddurlsTocartView,DeleteurlView, create_50_urls,Paymentcreateview,OpencartView,CustomTokenObtainPairView,DetailsView,ImageUploadView
 
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
 
@@ -16,11 +16,11 @@ urlpatterns = [
     path('OpencartView/',OpencartView.as_view(),name='OpencartView'),
     path('ContactQueryView/',ContactQueryView.as_view(),name='ContactQueryView'),
     path('AddurlsTocartView/',AddurlsTocartView.as_view(),name='AddurlsTocartView'),
-    path('DeleteurlView/<str:url_id>',DeleteurlView.as_view(),name='DeleteurlView'),
-    path('Paymentcreateview',Paymentcreateview.as_view(),name='Paymentcreateview'),
+    path('DeleteurlView/',DeleteurlView.as_view(),name='DeleteurlView'),
+    path('Paymentcreateview/',Paymentcreateview.as_view(),name='Paymentcreateview'),
+    path('imageupload',ImageUploadView.as_view(),name='imageupload'),
     path('url/<str:url_id>/details',DetailsView.as_view(),name='DetailsView'),
     path('url/<str:url_id>/update',DetailsView.as_view(),name='DetailsView'),
 
-    
     # path('UniqueurlmanagementView/',UniqueurlmanagementView.as_view(),name='UniqueurlmanagementView'),
 ]

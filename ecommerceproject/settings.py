@@ -165,3 +165,8 @@ EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
 EMAIL_HOST_USER = env.str('EMAIL_HOST_USER', default=False)
 EMAIL_HOST_PASSWORD = env.str('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env.str('DEFAULT_FROM_EMAIL', default='admin999@gmail.com')
+
+
+STRIPE_TEST_PUBLIC_KEY = 'your-publishable-key'
+STRIPE_TEST_SECRET_KEY = 'your-secret-key'
+STRIPE_WEBHOOK_SECRET = 'your_webhook_secret'

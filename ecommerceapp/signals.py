@@ -24,3 +24,15 @@ def send_contact_email_to_admin(sender, instance, created, **kwargs):
             recipient_list=[settings.DEFAULT_FROM_EMAIL],
             from_email=instance.email
         )
+
+        user_subject="Thank you for your Contacting"
+        user_message=(
+            f"Dear {instance.name},\n\n"
+            f"Thank you for reaching out! We have received your query and will get back to you as soon as possible.\n\n"
+        )
+        send_mail(
+            user_subject,
+            user_message,
+            recipient_list=[instance.email], 
+            from_email=settings.DEFAULT_FROM_EMAIL 
+        )
