@@ -12,7 +12,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model=CustomUser
-        fields=['id','username','password','email','phn_no']
+        fields=['id','username','password','email','phone_number']
 
     def validate_email(self, value):
         email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
