@@ -9,6 +9,7 @@ from django.http import HttpResponseRedirect
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.conf import settings
 import stripe
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from .serializer import CustomTokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -19,7 +20,7 @@ from .models import UniqueURL,CustomUser,CartItem,Details,Payment
 
 # Create your views here.
 
-# stripe.api_key = settings.STRIPE_TEST_SECRET_KEY
+stripe.api_key = settings.STRIPE_TEST_SECRET_KEY
 
 class RegisterUser(APIView):
     permission_classes=[AllowAny]
@@ -245,16 +246,16 @@ class Paymentcreateview(APIView):
             return Response({"error": "Cart ID is required."}, status=status.HTTP_400_BAD_REQUEST)
         try:
             cart = CartItem.objects.get(id=cart_id, user=request.user, is_closed=False)
-            total_amount = 0
-            for url in cart.unique_url.all():
-                total_amount += int(url.cost * cart.quantity)
-                session = stripe.checkout.Session.create(
+            # total_amounts=cart.total_price
+            total_amount=int(cart.total_price)*100
+            session = stripe.checkout.Session.create(
                     payment_method_types=["card"],
                     line_items=[{
                         "price_data": {
                         "currency": "usd",
-                        "product_data": {"name": f"Purchase Unique URL - {url.name}"},  
-                        "unit_amount": int(url.cost * 100),  
+                        "product_data": {"name": f"Purchase Unique URL - {url.id}"},  
+                        # "unit_amount": int(url.cost * 100),
+                        "unit_amount":total_amount,  
                     },
                     "quantity": cart.quantity,
                 } for url in cart.unique_url.all()],
@@ -262,8 +263,10 @@ class Paymentcreateview(APIView):
                 success_url=f"{settings.YOUR_DOMAIN}/payment-success?session_id={{CHECKOUT_SESSION_ID}}",
                 cancel_url=f"{settings.YOUR_DOMAIN}/payment-cancel",
             )
-                payment = Payment.objects.create(
+            payment = Payment.objects.create(
                 cart=cart,
+                # user=request.user,
+                user=cart.unique_url.first(),
                 total_amount=total_amount,
                 status="pending",
                 transaction_id=session.id,
@@ -280,3 +283,72 @@ class Paymentcreateview(APIView):
             return Response({"error": "Cart not found or unauthorized access."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    def get(self,request):
+        session_id = request.GET.get('session_id')
+        if not session_id:
+            return JsonResponse({"error": "Session ID not provided."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            session=stripe.checkout.Session.retrieve(session_id)
+            payment=Payment.objects.get(transaction_id=session_id)
+            payment.status="completed"
+            payment.save()
+#for user   
+            send_mail(
+                subject="Payment Successful",
+                message=(
+                    f"Dear {payment.user.name},\n\n"
+                    f"Thank you for your payment.\n"
+                    f"Payment ID: {payment.id}\n"
+                    f"Total Amount: ${payment.total_amount}\n"
+                    f"Status: Completed\n\n"
+                    ),
+                    from_email=settings.DEFAULT_FROM_MAIL,
+                    recipient_list=[payment.user.email]
+                )
+#to admin                   
+            send_mail(
+                subject="New Payment Notification",
+                message=(
+                    f"A new payment has been completed.\n\n"
+                    f"Payment Details:\n"
+                    f"Payment ID: {payment.id}\n"
+                    f"User:{payment.user.name}\n"
+                    f"Total Amount: ${payment.total_amount}\n"
+                    f"Status: Completed\n\n"
+                ),
+                from_email=settings.DEFAULT_FROM_MAIL,
+                recipient_list=['sreyamaya84@gmail.com']
+            )
+            return JsonResponse(
+                {
+                    "message": "Payment successful.",
+                    "payment_id": payment.id,
+                    "total amount":payment.total_amount,
+                    "payment status":session.payment_status,
+                }
+            )
+        except Payment.DoesNotExist:
+            return JsonResponse({"error": "Payment not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+class PaymentCancelView(APIView):
+
+    def get(self, request):
+        session_id = request.GET.get('session_id')   
+        if not session_id:
+            return JsonResponse({"error": "Session ID not provided."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            payment = Payment.objects.get(transaction_id=session_id)
+            payment.status = "FAILED" 
+            payment.save()
+            return JsonResponse({
+                "message": "Your payment was canceled. Please try again if you wish to complete the payment.",
+                "payment_id": payment.id,
+                "status": payment.status,
+            })
+        except Payment.DoesNotExist:
+            return JsonResponse({"error": "Payment not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

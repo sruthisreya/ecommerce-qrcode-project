@@ -167,6 +167,7 @@ EMAIL_HOST_PASSWORD = env.str('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env.str('DEFAULT_FROM_EMAIL', default='admin999@gmail.com')
 
 
-STRIPE_TEST_PUBLIC_KEY = 'your-publishable-key'
-STRIPE_TEST_SECRET_KEY = 'your-secret-key'
-STRIPE_WEBHOOK_SECRET = 'your_webhook_secret'
+STRIPE_TEST_PUBLIC_KEY = env.str('STRIPE_TEST_PUBLIC_KEY')
+STRIPE_TEST_SECRET_KEY = env.str('STRIPE_TEST_SECRET_KEY')
+STRIPE_WEBHOOK_SECRET = env.str('STRIPE_WEBHOOK_SECRET')
+YOUR_DOMAIN = env.str('YOUR_DOMAIN',default='http://127.0.0.1:8000/')
