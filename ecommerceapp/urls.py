@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterUser,ProtectedView,ContactQueryView,UniqueurlView,AddurlsTocartView,DeleteurlView, create_50_urls,Paymentcreateview,OpencartView,CustomTokenObtainPairView,DetailsView,ImageUploadView,PaymentCancelView
+from .views import RegisterUser,ProtectedView,ContactQueryView,UniqueurlView,AddurlsTocartView,DeleteurlView, create_50_urls,Paymentcreateview,OpencartView,CustomTokenObtainPairView,DetailsView,ImageUploadView,PaymentCancelView,PaymentSuccessView
 
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
 
@@ -8,7 +8,7 @@ app_name = 'package'
 urlpatterns = [
     path('RegisterUser/', RegisterUser.as_view(),name='RegisterUser'),
     path('ProtectedView/', ProtectedView.as_view(),name='ProtectedView'),
-    path('token/', CustomTokenObtainPairView.as_view(), name='token-btain-pair'),
+    path('login/', CustomTokenObtainPairView.as_view(), name='token-btain-pair'),
     # path('token/',TokenObtainPairView.as_view(),name='token'),
     path('refresh/',TokenRefreshView.as_view(),name='refresh'),
     path('create-url/', create_50_urls, name='create-url'),
@@ -18,7 +18,7 @@ urlpatterns = [
     path('AddurlsTocartView/',AddurlsTocartView.as_view(),name='AddurlsTocartView'),
     path('DeleteurlView/',DeleteurlView.as_view(),name='DeleteurlView'),
     path('Paymentcreateview/',Paymentcreateview.as_view(),name='Paymentcreateview'),
-    path('payment-success/',Paymentcreateview.as_view(),name='paymentsuccess'),
+    path('payment-success/',PaymentSuccessView.as_view(),name='paymentsuccess'),
     path('payment/cancel/',PaymentCancelView.as_view(),name='paymentcancel'),
     path('imageupload',ImageUploadView.as_view(),name='imageupload'),
    

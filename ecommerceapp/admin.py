@@ -61,7 +61,7 @@ class ContactQueryAdmin(admin.ModelAdmin):
 admin.site.register(ContactQuery,ContactQueryAdmin)
 
 class CartItemAdmin(admin.ModelAdmin):
-    list_display=['user','quantity','total_price']
+    list_display=['user','quantity','total_price','is_closed']
 admin.site.register(CartItem, CartItemAdmin)
 admin.site.register(Details)
 
