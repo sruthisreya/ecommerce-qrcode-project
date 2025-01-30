@@ -10,7 +10,7 @@ from django.contrib import messages
 import random
 # from admin_extra_buttons import api
 # from admin_extra_buttons.api import button
-from .models import CustomUser,UniqueURL,Payment,ContactQuery,CartItem,Details
+from .models import CustomUser,UniqueURL,Payment,ContactQuery,CartItem,Details,Images
 
 
 # Register your models here.
@@ -23,7 +23,7 @@ def generate_qr_codes(modeladmin, request, queryset):
             qr_io = io.BytesIO()   #memory file operatn handle
             qr.save(qr_io, format='PNG')
             qr_io.seek(0)
-            zip_file.writestr(f"{obj.username}_QRCode.png", qr_io.read())
+            zip_file.writestr(f"{obj.id}_QRCode.png", qr_io.read())
     buffer.seek(0)
     response = HttpResponse(buffer, content_type='application/zip')
     response['Content-Disposition'] = 'attachment; filename="qr_codes.zip"'
@@ -32,9 +32,7 @@ def generate_qr_codes(modeladmin, request, queryset):
 
 
 class Useradmin(admin.ModelAdmin):
-    list_display=['username','email','phn_no','password']
-    actions=[generate_qr_codes]
-
+    list_display=['username','email','phone_no']
 admin.site.register(CustomUser,Useradmin)  
 
 
@@ -45,7 +43,8 @@ def set_fixed_price(modeladmin,request,queryset):
 
 
 class UniqueurlAdmin(admin.ModelAdmin):
-    list_display=['user','created_at','cost']
+    list_display=['user','created_at','cost','in_cart']
+    actions=[generate_qr_codes]
     change_list_template = "urls/url.html"
 
 admin.site.register(UniqueURL,UniqueurlAdmin)
@@ -60,10 +59,20 @@ class ContactQueryAdmin(admin.ModelAdmin):
     list_display=['name','email','message','created_at']
 admin.site.register(ContactQuery,ContactQueryAdmin)
 
+
 class CartItemAdmin(admin.ModelAdmin):
     list_display=['user','quantity','total_price','is_closed']
 admin.site.register(CartItem, CartItemAdmin)
-admin.site.register(Details)
+
+
+class DetailsAdmin(admin.ModelAdmin):
+    list_display=['unique_url','title','description']
+admin.site.register(Details,DetailsAdmin)
+
+
+class ImagesAdmin(admin.ModelAdmin):
+    list_display=['file','detail','created_at']
+admin.site.register(Images,ImagesAdmin)
 
 
 

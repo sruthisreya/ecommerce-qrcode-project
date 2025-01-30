@@ -5,7 +5,7 @@ from django.contrib.auth.models import AbstractUser
 
 class CustomUser(AbstractUser):
     email = models.EmailField(max_length=100, unique=True)
-    phn_no=models.CharField(max_length=100)
+    phone_no=models.CharField(max_length=100)
 
     def __str__(self):
         return self.email

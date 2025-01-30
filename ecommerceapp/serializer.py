@@ -12,7 +12,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model=CustomUser
-        fields=['id','username','password','email','phn_no']
+        fields=['id','username','password','email','phone_no']
 
     def validate_email(self, value):
         email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
@@ -24,7 +24,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     def validate_phn_no(self, value):
         if not re.match(r'^\d{10}$', value):
             raise ValidationError("Phone number must be 10 digits.")
-        if CustomUser.objects.filter(phn_no=value).exists():
+        if CustomUser.objects.filter(phone_no=value).exists():
             raise ValidationError("A user with this phone number already exists.")
         return value
     
@@ -39,7 +39,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         user=CustomUser.objects.create_user(
             username=validated_data['username'],
             password=validated_data['password'],
-            phn_no=validated_data['phn_no'],
+            phone_no=validated_data['phone_no'],
             email=validated_data['email']
         )
         return user 
@@ -48,9 +48,23 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         return {**super().validate(attrs), "message": "login successful."}
+    
+
+class ImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Images
+        fields = ['file','detail','created_at']
+
+class DetailsSerializer(serializers.ModelSerializer):
+    images=ImageSerializer(many=True,read_only=True)
+    class Meta:
+        model=Details
+        fields=['unique_url','title','description','images']
+
 
 
 class UniqueurlSerializer(serializers.ModelSerializer):
+    # details=DetailsSerializer()
     class Meta:
         model=UniqueURL
         fields=['id','created_at']
@@ -78,18 +92,6 @@ class CartitemSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'unique_url', 'quantity', 'total_price', 'created_at']
 
 
-
-class ImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Images
-        fields = ['file','detail','created_at']
-
-
-class DetailsSerializer(serializers.ModelSerializer):
-    images=ImageSerializer(many=True,read_only=True,source='image-set')
-    class Meta:
-        model=Details
-        fields=['unique_url','title','description','created_at','images']
 
 
 # class DetailsUpdateSerializer(serializers.ModelSerializer):
