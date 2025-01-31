@@ -16,7 +16,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework import status
 
 from django.db import transaction
-from .models import UniqueURL,CustomUser,CartItem,Details,Payment
+from .models import UniqueURL,CustomUser,CartItem,Details,Payment,Images
 
 # Create your views here.
 
@@ -29,7 +29,12 @@ class RegisterUser(APIView):
         serializer=UserRegisterSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data,status=status.HTTP_201_CREATED)
+            return Response(
+                {
+                    "message":" Registration was Successfull",
+                    "user":serializer.data
+                },status=status.HTTP_201_CREATED
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -54,7 +59,9 @@ class UniqueurlView(APIView):
         serializer = UniqueurlSerializer(user_urls, many=True)
         return Response(serializer.data)
     
-#add urls to cart
+
+
+# add urls to cart
 class AddurlsTocartView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [JWTAuthentication]
@@ -84,6 +91,8 @@ class AddurlsTocartView(APIView):
             "added_urls": serialized_urls
         }, status=status.HTTP_201_CREATED)
 
+
+
   #feedback  
 class ContactQueryView(APIView):
     permission_classes=[AllowAny]
@@ -97,9 +106,10 @@ class ContactQueryView(APIView):
 
 
 def create_50_urls(request):
+    print("hello")
     for i in range(50):
         UniqueURL.objects.create()
-    return HttpResponseRedirect("../../")
+    return HttpResponseRedirect("../")
     
 
 
@@ -168,26 +178,54 @@ class OpencartView(APIView):
 
 class ImageUploadView(APIView):
     parser_classes=(MultiPartParser, FormParser)
+    permission_classes=[IsAuthenticated]
+    authentication_classes=[JWTAuthentication]
 
-    def post(self, request, *args, **kwargs):
-        serializer=ImageSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Image uploaded successfully!"}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    def post(self, request, url_id):
+        try:
+            unique_url = UniqueURL.objects.get(id=url_id)
+            details = unique_url.details
+        except UniqueURL.DoesNotExist:
+            return Response({"detail": "URL not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Details.DoesNotExist:
+            return Response({"detail": "Details not found."}, status=status.HTTP_404_NOT_FOUND)
+        image_file = request.FILES.get('file')
+        if not image_file:
+            return Response({"detail": "No image file provided."}, status=status.HTTP_400_BAD_REQUEST)
+        image = Images.objects.create(file=image_file, detail=details)
+        return Response({
+            "detail": "Image uploaded successfully",
+            "image": {
+                "id": image.id,
+                "file": image.file.url,
+                "created_at": image.created_at
+            }
+        }, status=status.HTTP_201_CREATED)
+    
 
 
 class DetailsView(APIView):
     permission_classes=[IsAuthenticated]
     authentication_classes=[JWTAuthentication]
-    def get(self, request, url_id, *args, **kwargs):
+    def post(self, request, url_id):
+        try:
+            unique_url = get_object_or_404(UniqueURL, id=url_id)
+            serializer = DetailsSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save(unique_url=unique_url)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+    def get(self, request, url_id):
         unique_url = get_object_or_404(UniqueURL, id=url_id)
         details = get_object_or_404(Details, unique_url=unique_url)
         serializer = DetailsSerializer(details)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-    def put(self, request, url_id, *args, **kwargs):
+    def put(self, request, url_id):
         unique_url = get_object_or_404(UniqueURL, id=url_id)
         details = get_object_or_404(Details, unique_url=unique_url)
 
@@ -196,8 +234,6 @@ class DetailsView(APIView):
             serializer.save()
             return Response({"message": "Details updated successfully!", "data": serializer.data}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 #payment
 class Paymentcreateview(APIView):
@@ -265,28 +301,32 @@ class PaymentSuccessView(APIView):
                 payment.status = "completed"
                 payment.transaction_id = session.payment_intent 
                 payment.save()
-
+                cart = CartItem.objects.filter(user=request.user, is_closed=False).first()
+                if cart:
+                    cart.is_closed = True
+                    cart.save()
                 #for user     
                 send_mail(
                     subject="Payment Successful",
                     message=(
                         f"Dear {payment.user},\n\n"
                         f"Thank you for your payment.\n"
+                        f"title:url purchased.\n"
                         f"Payment ID: {payment.id}\n"
                         f"Total Amount: ${payment.total_amount}\n"
                         f"Status: Completed\n\n"
                         ),
                         from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[payment.user.email]
+                        recipient_list=[payment.cart.user.email]
                         )
-# to admin                   
+                # to admin                   
                 send_mail(
                     subject="New Payment Notification",
                     message=(
                         f"A new payment has been completed.\n\n"
                         f"Payment Details:\n"
                         f"Payment ID: {payment.id}\n"
-                        f"User:{payment.user.name}\n"
+                        f"User:{payment.user}\n"
                         f"Total Amount: ${payment.total_amount}\n"
                         f"Status: Completed\n\n"
                         ),

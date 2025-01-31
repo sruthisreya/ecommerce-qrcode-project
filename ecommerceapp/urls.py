@@ -20,7 +20,7 @@ urlpatterns = [
     path('Paymentcreateview/',Paymentcreateview.as_view(),name='Paymentcreateview'),
     path('payment-success/',PaymentSuccessView.as_view(),name='paymentsuccess'),
     path('payment/cancel/',PaymentCancelView.as_view(),name='paymentcancel'),
-    path('imageupload',ImageUploadView.as_view(),name='imageupload'),
+    path('url/<str:url_id>/upload-image/',ImageUploadView.as_view(),name='upload-image'),
    
     path('url/<str:url_id>/details',DetailsView.as_view(),name='DetailsView'),
     path('url/<str:url_id>/update',DetailsView.as_view(),name='DetailsView'),
