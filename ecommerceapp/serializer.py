@@ -53,15 +53,34 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Images
-        fields = ['file','detail','created_at']
+        fields = ['file','detail']
 
 class DetailsSerializer(serializers.ModelSerializer):
-    images=ImageSerializer(many=True,read_only=True)
+    images=ImageSerializer(many=True, read_only=True)
     class Meta:
         model=Details
         fields=['unique_url','title','description','images']
+    # title = serializers.CharField(required=False, allow_blank=True)
+    # description = serializers.CharField(required=False, allow_blank=True)
 
 
+    def create(self, validated_data):
+        images_data = self.context['request'].FILES.getlist('images')
+        print(images_data)
+        details_instance, created = Details.objects.update_or_create(
+            unique_url=validated_data.pop('unique_url'),  # Find by unique_url
+            defaults=validated_data  # Update other fields
+        
+        )
+        # Handle image uploads
+        for image in images_data:
+            Images.objects.create(detail=details_instance, file=image)
+            
+        return details_instance
+
+
+
+    
 
 class UniqueurlSerializer(serializers.ModelSerializer):
     # details=DetailsSerializer()

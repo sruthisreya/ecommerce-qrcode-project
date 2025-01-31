@@ -62,7 +62,7 @@ class Payment(models.Model):
     user = models.ForeignKey(UniqueURL, on_delete=models.CASCADE)
     cart=models.ForeignKey(CartItem,on_delete=models.CASCADE)
     checkout_id = models.CharField(max_length=100)
-    transaction_id = models.CharField(max_length=100)
+    transaction_id = models.CharField(max_length=100,null=True,blank=True)
     status=models.CharField(max_length=100,choices=STATUS_CHOICES)
     total_amount=models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)

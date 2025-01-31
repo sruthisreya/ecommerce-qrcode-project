@@ -1,9 +1,11 @@
 from django.urls import path
-from .views import RegisterUser,ProtectedView,ContactQueryView,UniqueurlView,AddurlsTocartView,DeleteurlView, create_50_urls,Paymentcreateview,OpencartView,CustomTokenObtainPairView,DetailsView,ImageUploadView,PaymentCancelView,PaymentSuccessView
+from .views import RegisterUser,ProtectedView,ContactQueryView,UniqueurlView,AddurlsTocartView,DeleteurlView,create_50_urls,Paymentcreateview,OpencartView,CustomTokenObtainPairView,DetailsView,PaymentCancelView,PaymentSuccessView
 
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
 
+
 app_name = 'package'
+
 
 urlpatterns = [
     path('RegisterUser/', RegisterUser.as_view(),name='RegisterUser'),
@@ -20,7 +22,7 @@ urlpatterns = [
     path('Paymentcreateview/',Paymentcreateview.as_view(),name='Paymentcreateview'),
     path('payment-success/',PaymentSuccessView.as_view(),name='paymentsuccess'),
     path('payment/cancel/',PaymentCancelView.as_view(),name='paymentcancel'),
-    path('url/<str:url_id>/upload-image/',ImageUploadView.as_view(),name='upload-image'),
+    # path('url/<str:url_id>/upload-image/',ImageUploadView.as_view(),name='upload-image'),
    
     path('url/<str:url_id>/details',DetailsView.as_view(),name='DetailsView'),
     path('url/<str:url_id>/update',DetailsView.as_view(),name='DetailsView'),

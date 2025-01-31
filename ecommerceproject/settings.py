@@ -164,7 +164,7 @@ EMAIL_PORT = env.int('EMAIL_PORT', default=587)
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)  
 EMAIL_HOST_USER = env.str('EMAIL_HOST_USER', default=False)
 EMAIL_HOST_PASSWORD = env.str('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = env.str('DEFAULT_FROM_EMAIL', default='admin999@gmail.com')
+DEFAULT_FROM_EMAIL = env.str('DEFAULT_FROM_EMAIL', default='sreyamaya84@gmail.com')
 
 
 STRIPE_TEST_PUBLIC_KEY = env.str('STRIPE_TEST_PUBLIC_KEY')

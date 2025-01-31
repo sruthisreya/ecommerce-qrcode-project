@@ -176,64 +176,49 @@ class OpencartView(APIView):
         }, status=status.HTTP_200_OK)
     
 
-class ImageUploadView(APIView):
-    parser_classes=(MultiPartParser, FormParser)
-    permission_classes=[IsAuthenticated]
-    authentication_classes=[JWTAuthentication]
-
-    def post(self, request, url_id):
-        try:
-            unique_url = UniqueURL.objects.get(id=url_id)
-            details = unique_url.details
-        except UniqueURL.DoesNotExist:
-            return Response({"detail": "URL not found."}, status=status.HTTP_404_NOT_FOUND)
-        except Details.DoesNotExist:
-            return Response({"detail": "Details not found."}, status=status.HTTP_404_NOT_FOUND)
-        image_file = request.FILES.get('file')
-        if not image_file:
-            return Response({"detail": "No image file provided."}, status=status.HTTP_400_BAD_REQUEST)
-        image = Images.objects.create(file=image_file, detail=details)
-        return Response({
-            "detail": "Image uploaded successfully",
-            "image": {
-                "id": image.id,
-                "file": image.file.url,
-                "created_at": image.created_at
-            }
-        }, status=status.HTTP_201_CREATED)
     
 
 
 class DetailsView(APIView):
     permission_classes=[IsAuthenticated]
     authentication_classes=[JWTAuthentication]
-    def post(self, request, url_id):
-        try:
-            unique_url = get_object_or_404(UniqueURL, id=url_id)
-            serializer = DetailsSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save(unique_url=unique_url)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+    parser_classes = (MultiPartParser, FormParser) 
 
     def get(self, request, url_id):
         unique_url = get_object_or_404(UniqueURL, id=url_id)
         details = get_object_or_404(Details, unique_url=unique_url)
         serializer = DetailsSerializer(details)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
     def put(self, request, url_id):
         unique_url = get_object_or_404(UniqueURL, id=url_id)
-        details = get_object_or_404(Details, unique_url=unique_url)
+        request.data['unique_url'] = unique_url.id  
 
-        serializer = DetailsSerializer(details, data=request.data, partial=True)
+        # Check if Details instance exists
+        details_instance = Details.objects.filter(unique_url=unique_url).first()
+        if details_instance:
+            serializer = DetailsSerializer(details_instance, data=request.data, context={'request': request})
+        else:
+            serializer = DetailsSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Details updated successfully!", "data": serializer.data}, status=status.HTTP_200_OK)
+            details_instance = serializer.save()
+            return Response(DetailsSerializer(details_instance).data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+
+    
+
+    #not need 
+    # def put(self, request, url_id):
+    #     unique_url = get_object_or_404(UniqueURL, id=url_id)
+    #     details = get_object_or_404(Details, unique_url=unique_url)
+
+    #     serializer = DetailsSerializer(details, data=request.data, partial=True)
+    #     if serializer.is_valid():
+    #         serializer.save()
+    #         return Response({"message": "Details updated successfully!", "data": serializer.data}, status=status.HTTP_200_OK)
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 #payment
 class Paymentcreateview(APIView):
@@ -287,8 +272,8 @@ class Paymentcreateview(APIView):
 
 
 class PaymentSuccessView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes=[JWTAuthentication]
+    permission_classes = [AllowAny]
+    # authentication_classes=[JWTAuthentication]
 
     def get(self, request):
         session_id = request.GET.get('session_id')
@@ -331,7 +316,7 @@ class PaymentSuccessView(APIView):
                         f"Status: Completed\n\n"
                         ),
                         from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=['sreyamaya84@gmail.com']
+                        recipient_list=['DEFAULT_FROM_EMAIL']
                         )
                 return Response(
                     {
