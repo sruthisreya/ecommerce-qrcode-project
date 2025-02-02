@@ -40,7 +40,7 @@ class Details(models.Model):
 class Images(models.Model):
     file=models.FileField(upload_to='uploads/')
     created_at=models.DateTimeField(auto_now=True)
-    detail=models.ForeignKey(Details,on_delete=models.CASCADE)
+    detail=models.ForeignKey(Details,on_delete=models.CASCADE, related_name='images')
     def __str__(self):
         return self.file.name
 

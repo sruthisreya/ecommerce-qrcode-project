@@ -60,30 +60,49 @@ class DetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model=Details
         fields=['unique_url','title','description','images']
-    # title = serializers.CharField(required=False, allow_blank=True)
-    # description = serializers.CharField(required=False, allow_blank=True)
-
 
     def create(self, validated_data):
-        images_data = self.context['request'].FILES.getlist('images')
-        print(images_data)
-        details_instance, created = Details.objects.update_or_create(
-            unique_url=validated_data.pop('unique_url'),  # Find by unique_url
-            defaults=validated_data  # Update other fields
-        
-        )
-        # Handle image uploads
-        for image in images_data:
+        image_data = self.context['request'].FILES.getlist('file')
+        details_instance, created = Details.objects.update_or_create(**validated_data)
+
+        for image in image_data:    
             Images.objects.create(detail=details_instance, file=image)
-            
+
         return details_instance
+    
+    def update(self, instance, validated_data):
+        image_data = self.context['request'].FILES.getlist('file')
+        instance.title = validated_data.get('title', instance.title)
+        instance.description = validated_data.get('description', instance.description)
+
+        Images.objects.filter(detail=instance).delete()
+        for image in image_data:
+            Images.objects.create(detail=instance, file=image)
+
+        return instance
+
+    # def create(self, validated_data):
+    #     request = self.context['request']
+    #     images_data = request.FILES.getlist('images')
+    #     print(images_data,"helo")
+    #     details_instance, created = Details.objects.update_or_create(
+    #         unique_url=validated_data.pop('unique_url'),  # Find by unique_url
+    #         defaults=validated_data  # Update other fields
+        
+    #     )
+    #     # Handle image uploads
+    #     for image in images_data:
+    #         Images.objects.create(detail=details_instance, file=image)
+            
+    #     return details_instance
+
+
 
 
 
     
 
 class UniqueurlSerializer(serializers.ModelSerializer):
-    # details=DetailsSerializer()
     class Meta:
         model=UniqueURL
         fields=['id','created_at']

@@ -182,7 +182,7 @@ class OpencartView(APIView):
 class DetailsView(APIView):
     permission_classes=[IsAuthenticated]
     authentication_classes=[JWTAuthentication]
-    parser_classes = (MultiPartParser, FormParser) 
+    # parser_classes = (MultiPartParser, FormParser) 
 
     def get(self, request, url_id):
         unique_url = get_object_or_404(UniqueURL, id=url_id)
@@ -191,9 +191,10 @@ class DetailsView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, url_id):
+        print(request.data)
         unique_url = get_object_or_404(UniqueURL, id=url_id)
         request.data['unique_url'] = unique_url.id  
-
+        print(unique_url)
         # Check if Details instance exists
         details_instance = Details.objects.filter(unique_url=unique_url).first()
         if details_instance:
@@ -204,21 +205,9 @@ class DetailsView(APIView):
             details_instance = serializer.save()
             return Response(DetailsSerializer(details_instance).data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    
 
     
-
-    #not need 
-    # def put(self, request, url_id):
-    #     unique_url = get_object_or_404(UniqueURL, id=url_id)
-    #     details = get_object_or_404(Details, unique_url=unique_url)
-
-    #     serializer = DetailsSerializer(details, data=request.data, partial=True)
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return Response({"message": "Details updated successfully!", "data": serializer.data}, status=status.HTTP_200_OK)
-    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 
 #payment
 class Paymentcreateview(APIView):
