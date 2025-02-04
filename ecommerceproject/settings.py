@@ -130,6 +130,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -155,7 +156,7 @@ SIMPLE_JWT={
 }
 
 MEDIA_URL='/media/'
-MEDIA_ROOT=BASE_DIR / 'media'
+MEDIA_ROOT=os.path.join(BASE_DIR, 'media')
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -164,7 +165,7 @@ EMAIL_PORT = env.int('EMAIL_PORT', default=587)
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)  
 EMAIL_HOST_USER = env.str('EMAIL_HOST_USER', default=False)
 EMAIL_HOST_PASSWORD = env.str('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = env.str('DEFAULT_FROM_EMAIL', default='admin999@gmail.com')
+DEFAULT_FROM_EMAIL = env.str('DEFAULT_FROM_EMAIL', default='sreyamaya84@gmail.com')
 
 
 STRIPE_TEST_PUBLIC_KEY = env.str('STRIPE_TEST_PUBLIC_KEY')
