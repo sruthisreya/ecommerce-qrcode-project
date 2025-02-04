@@ -51,7 +51,7 @@ admin.site.register(UniqueURL,UniqueurlAdmin)
 
 
 class PaymentAdmin(admin.ModelAdmin):
-    list_display=['user','transaction_id','status','created_at']
+    list_display=['user','transaction_id','status','created_at','checkout_id']
 admin.site.register(Payment, PaymentAdmin)
 
 
@@ -62,6 +62,7 @@ admin.site.register(ContactQuery,ContactQueryAdmin)
 
 class CartItemAdmin(admin.ModelAdmin):
     list_display=['user','quantity','total_price','is_closed']
+    filter_horizontal=['unique_url', ]
 admin.site.register(CartItem, CartItemAdmin)
 
 
