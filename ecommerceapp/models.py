@@ -8,7 +8,7 @@ class CustomUser(AbstractUser):
     phone_no=models.CharField(max_length=100)
 
     def __str__(self):
-        return self.email
+        return f" Booked by:{self.email},  {self.username}" 
     
 
 class UniqueURL(models.Model):
@@ -16,7 +16,7 @@ class UniqueURL(models.Model):
     user = models.ForeignKey(CustomUser, blank=True, null=True, on_delete=models.SET_NULL, related_name="unique_url_user")
     in_cart = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    cost=models.DecimalField(max_digits=10,decimal_places=2)
+    cost=models.DecimalField(max_digits=10, decimal_places=2)
 
     def save(self,*args,**kwargs):
         if self.cost is None or self.cost==0.0:
@@ -40,7 +40,7 @@ class Details(models.Model):
 class Images(models.Model):
     file=models.FileField(upload_to='uploads/')
     created_at=models.DateTimeField(auto_now=True)
-    detail=models.ForeignKey(Details,on_delete=models.CASCADE, related_name='images')
+    detail=models.ForeignKey(Details, on_delete=models.CASCADE, related_name='images')
     def __str__(self):
         return self.file.name
 
@@ -59,11 +59,11 @@ class CartItem(models.Model):
 
 class Payment(models.Model):
     STATUS_CHOICES = [('PENDING', 'Pending'), ('COMPLETED', 'Completed'), ('FAILED', 'Failed')]
-    user = models.ForeignKey(UniqueURL, on_delete=models.CASCADE)
-    cart=models.ForeignKey(CartItem,on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    cart=models.ForeignKey(CartItem, on_delete=models.CASCADE)
     checkout_id = models.CharField(max_length=100)
-    transaction_id = models.CharField(max_length=100,null=True,blank=True)
-    status=models.CharField(max_length=100,choices=STATUS_CHOICES)
+    transaction_id = models.CharField(max_length=100, null=True, blank=True)
+    status=models.CharField(max_length=100, choices=STATUS_CHOICES)
     total_amount=models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 

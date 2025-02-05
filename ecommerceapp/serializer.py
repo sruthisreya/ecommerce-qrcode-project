@@ -76,6 +76,7 @@ class DetailsSerializer(serializers.ModelSerializer):
         instance.description = validated_data.get('description', instance.description)
 
         Images.objects.filter(detail=instance).delete()
+        
         for image in image_data:
             Images.objects.create(detail=instance, file=image)
 

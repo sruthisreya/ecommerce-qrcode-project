@@ -9,6 +9,8 @@ from django.http import HttpResponseRedirect
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.conf import settings
 import stripe
+from .permissions import IsOwnerOfUniqueUrl
+from django.db.models import Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from .serializer import CustomTokenObtainPairSerializer
@@ -47,6 +49,14 @@ class ProtectedView(APIView):
     
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
+def create_50_urls(request):
+    print("hello")
+    for i in range(50):
+        UniqueURL.objects.create()
+    return HttpResponseRedirect("../")
+
 
 #to view all urls
 class UniqueurlView(APIView):
@@ -91,25 +101,6 @@ class AddurlsTocartView(APIView):
             "added_urls": serialized_urls
         }, status=status.HTTP_201_CREATED)
 
-
-
-  #feedback  
-class ContactQueryView(APIView):
-    permission_classes=[AllowAny]
-
-    def post(self,request):
-        serializer = ContactSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response({"message":"your feedback has been submitted successfully"},status=status.HTTP_201_CREATED)
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-
-
-def create_50_urls(request):
-    print("hello")
-    for i in range(50):
-        UniqueURL.objects.create()
-    return HttpResponseRedirect("../")
     
 
 
@@ -145,6 +136,7 @@ class DeleteurlView(APIView):
             "remaining_urls": serialized_urls
         }, status=status.HTTP_200_OK)
 
+
 #remaining urls
 class OpencartView(APIView):
     permission_classes=[IsAuthenticated]
@@ -176,14 +168,11 @@ class OpencartView(APIView):
         }, status=status.HTTP_200_OK)
     
 
-    
-
-
 class DetailsView(APIView):
-    permission_classes=[IsAuthenticated]
-    authentication_classes=[JWTAuthentication]
-    # parser_classes = (MultiPartParser, FormParser) 
 
+    permission_classes=[IsAuthenticated, IsOwnerOfUniqueUrl]
+    authentication_classes=[JWTAuthentication]
+    #authenticated person can see
     def get(self, request, url_id):
         unique_url = get_object_or_404(UniqueURL, id=url_id)
         details = get_object_or_404(Details, unique_url=unique_url)
@@ -193,6 +182,8 @@ class DetailsView(APIView):
     def put(self, request, url_id):
         print(request.data)
         unique_url = get_object_or_404(UniqueURL, id=url_id)
+        if unique_url.user!=request.user:
+            return Response({"detail": "You are not the owner of this url"},)
         request.data['unique_url'] = unique_url.id  
         print(unique_url)
         # Check if Details instance exists
@@ -207,42 +198,45 @@ class DetailsView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     
-    
 
 #payment
 class Paymentcreateview(APIView):
-    permission_classes=[IsAuthenticated]
-    authentication_classes=[JWTAuthentication]
-    def post(self,request):
+
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    def post(self, request):
         cart_id = request.data.get("cart_id")
         if not cart_id:
             return Response({"error": "Cart ID is required."}, status=status.HTTP_400_BAD_REQUEST)
         try:
             cart = CartItem.objects.get(id=cart_id, user=request.user, is_closed=False)
-            # total_amounts=cart.total_price
-            total_amount=int(cart.total_price)*100
+            total_amount = int(cart.total_price * 100)
             session = stripe.checkout.Session.create(
-                    payment_method_types=["card"],
-                    line_items=[{
-                        "price_data": {
+                payment_method_types=["card"],
+                line_items=[{
+                    "price_data": {
                         "currency": "inr",
-                        "product_data": {"name": f"Purchase Unique URL - {url.id}"},  
-                        # "unit_amount": int(url.cost * 100),
-                        "unit_amount":total_amount,  
+                        "product_data": {"name": f"Purchase Unique URL - {cart.id}"},
+                        "unit_amount": total_amount,
                     },
-                    "quantity": cart.quantity,
-                } for url in cart.unique_url.all()],
+                    "quantity": 1,
+                }],
                 mode="payment",
                 success_url=f"{settings.YOUR_DOMAIN}/payment-success/?session_id={{CHECKOUT_SESSION_ID}}",
                 cancel_url=f"{settings.YOUR_DOMAIN}/payment-cancel",
             )
+            unique_url = cart.unique_url.first()
+            if not unique_url:
+                return Response({"error": "No UniqueURL linked to this cart."}, status=status.HTTP_400_BAD_REQUEST)
+            user = unique_url.user if unique_url.user else cart.user
+            if not user:
+                return Response({"error": "No associated user found for this cart."}, status=status.HTTP_400_BAD_REQUEST)
             payment = Payment.objects.create(
                 cart=cart,
-                # user=request.user,
-                user=cart.unique_url.first(),
+                user=user,
                 total_amount=total_amount,
-                status="pending",
-                # transaction_id=session.id,
+                status="PENDING",
                 checkout_id=session.id,
             )
             return Response({
@@ -251,77 +245,82 @@ class Paymentcreateview(APIView):
                 "url": session.url,
                 "payment_id": payment.id,
             }, status=status.HTTP_201_CREATED)
-
         except CartItem.DoesNotExist:
             return Response({"error": "Cart not found or unauthorized access."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         
-
-
 
 class PaymentSuccessView(APIView):
     permission_classes = [AllowAny]
-    # authentication_classes=[JWTAuthentication]
 
     def get(self, request):
         session_id = request.GET.get('session_id')
         if not session_id:
-            return Response({"error": "Session ID not provided."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Session ID not provided"}, status=status.HTTP_400_BAD_REQUEST)
         try:
             session = stripe.checkout.Session.retrieve(session_id)
             payment = Payment.objects.get(checkout_id=session_id)
             if session.payment_status == "paid":
-                payment.status = "completed"
+                payment.status = "COMPLETED"
+                print(payment.status)
                 payment.transaction_id = session.payment_intent 
                 payment.save()
-                cart = CartItem.objects.filter(user=request.user, is_closed=False).first()
-                if cart:
+                cart = payment.cart
+                if cart and not cart.is_closed:
                     cart.is_closed = True
                     cart.save()
-                #for user     
-                send_mail(
-                    subject="Payment Successful",
-                    message=(
-                        f"Dear {payment.user},\n\n"
-                        f"Thank you for your payment.\n"
-                        f"title:url purchased.\n"
-                        f"Payment ID: {payment.id}\n"
-                        f"Total Amount: ${payment.total_amount}\n"
-                        f"Status: Completed\n\n"
+                for unique_url in cart.unique_url.all():
+                    unique_url.user=cart.user
+                    unique_url.save()
+
+                #for i in cart user field update 
+                # notify user
+                user_email = payment.cart.user.email if payment.cart and payment.cart.user else None
+                if user_email:
+                    send_mail(
+                        subject="Payment ",
+                        message=(
+                            f"Dear {payment.cart.user.username},\n\n"
+                            f"Thank you for your payment.\n"
+                            f"title: URL purchased.\n"
+                            f"Payment ID: {payment.id}\n"
+                            f"Total Amount: ${payment.total_amount / 100}\n"
+                            f"Status: Completed\n\n"
                         ),
                         from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=[payment.cart.user.email]
-                        )
-                # to admin                   
+                        recipient_list=[user_email]
+                    )
+                # Notify admin
+                admin_email = settings.DEFAULT_FROM_EMAIL
                 send_mail(
                     subject="New Payment Notification",
                     message=(
                         f"A new payment has been completed.\n\n"
                         f"Payment Details:\n"
                         f"Payment ID: {payment.id}\n"
-                        f"User:{payment.user}\n"
-                        f"Total Amount: ${payment.total_amount}\n"
+                        f"User: {payment.user}\n"
+                        f"Total Amount: ${payment.total_amount / 100}\n"
                         f"Status: Completed\n\n"
-                        ),
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=['DEFAULT_FROM_EMAIL']
-                        )
-                return Response(
-                    {
-                        "message": "Payment successful.",
-                        "payment_id": payment.id,
-                        "transaction_id": payment.transaction_id,  
-                        "total_amount": payment.total_amount,
-                        "payment_status": session.payment_status,
-                    }
+                    ),
+                    from_email=admin_email,
+                    recipient_list=[admin_email]
                 )
+                return Response({
+                    "message": "Payment successful.",
+                    "payment_id": payment.id,
+                    "transaction_id": payment.transaction_id,  
+                    "total_amount": payment.total_amount / 100,
+                    "payment_status": session.payment_status,
+                })
             else:
-                return Response({"error": "Payment was not successful."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "Payment was not successful"}, status=status.HTTP_400_BAD_REQUEST)
         except Payment.DoesNotExist:
             return Response({"error": "Payment not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 class PaymentCancelView(APIView):
@@ -335,15 +334,31 @@ class PaymentCancelView(APIView):
             payment.status = "FAILED" 
             payment.save()
             return JsonResponse({
-                "message": "Your payment was canceled. Please try again if you wish to complete the payment.",
+                "message": "Your payment was cancelled. Please try again if you wish to complete the payment.",
                 "payment_id": payment.id,
                 "status": payment.status,
             })
         except Payment.DoesNotExist:
             return JsonResponse({"error": "Payment not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return JsonResponse({"errSuccessfullor": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+
+  #feedback  
+class ContactQueryView(APIView):
+    permission_classes=[AllowAny]
+
+    def post(self,request):
+        serializer = ContactSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response({"message":"your feedback has been submitted successfully"},status=status.HTTP_201_CREATED)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+
+
 
 
 
