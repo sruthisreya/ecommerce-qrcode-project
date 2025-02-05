@@ -8,7 +8,7 @@ class CustomUser(AbstractUser):
     phone_no=models.CharField(max_length=100)
 
     def __str__(self):
-        return f" Booked by:{self.email},  {self.username}" 
+        return f" Booked by:  {self.username}" 
     
 
 class UniqueURL(models.Model):
@@ -34,7 +34,7 @@ class Details(models.Model):
     closed_date = models.DateField(auto_now=True)
 
     def __str__(self):
-        return self.title
+        return f"{self.title} {self.description}" 
 
 
 class Images(models.Model):
@@ -68,7 +68,7 @@ class Payment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Payment {self.transaction_id}"
+        return f"Payment by:{self.transaction_id}"
     
 
 class ContactQuery(models.Model):
