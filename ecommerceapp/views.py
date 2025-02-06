@@ -7,9 +7,12 @@ from rest_framework.response import Response
 from django.core.mail import send_mail
 from django.http import HttpResponseRedirect
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.http import Http404
+
 from django.conf import settings
 import stripe
 from .permissions import IsOwnerOfUniqueUrl
+from django.shortcuts import render, redirect
 from django.db.models import Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -172,32 +175,24 @@ class DetailsView(APIView):
 
     permission_classes=[IsAuthenticated, IsOwnerOfUniqueUrl]
     authentication_classes=[JWTAuthentication]
-    #authenticated person can see
-    def get(self, request, url_id):
-        unique_url = get_object_or_404(UniqueURL, id=url_id)
-        details = get_object_or_404(Details, unique_url=unique_url)
-        serializer = DetailsSerializer(details)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, url_id):
-        print(request.data)
         unique_url = get_object_or_404(UniqueURL, id=url_id)
-        if unique_url.user!=request.user:
-            return Response({"detail": "You are not the owner of this url"},)
-        request.data['unique_url'] = unique_url.id  
-        print(unique_url)
-        # Check if Details instance exists
-        details_instance = Details.objects.filter(unique_url=unique_url).first()
-        if details_instance:
-            serializer = DetailsSerializer(details_instance, data=request.data, context={'request': request})
-        else:
-            serializer = DetailsSerializer(data=request.data, context={'request': request})
+        details_instance, _ = Details.objects.get_or_create(unique_url=unique_url)
+        self.check_object_permissions(request, unique_url)
+        serializer = DetailsSerializer(details_instance, data=request.data, context={'request': request}, partial=True)  
         if serializer.is_valid():
             details_instance = serializer.save()
             return Response(DetailsSerializer(details_instance).data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
     
+class DetailsgetView(APIView):
+    permission_classes=[AllowAny]
+    def get(self, request, url_id):
+        unique_url = get_object_or_404(UniqueURL, id=url_id)
+        details = get_object_or_404(Details, unique_url=unique_url)
+        serializer = DetailsSerializer(details)
+        return Response(serializer.data, status=status.HTTP_200_OK) 
 
 #payment
 class Paymentcreateview(APIView):
@@ -223,8 +218,8 @@ class Paymentcreateview(APIView):
                     "quantity": 1,
                 }],
                 mode="payment",
-                success_url=f"{settings.YOUR_DOMAIN}/payment-success/?session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url=f"{settings.YOUR_DOMAIN}/payment-cancel",
+                success_url=f"{settings.YOUR_DOMAIN}/api/v1/payment-success/?session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{settings.YOUR_DOMAIN}/api/v1/payment-cancel",
             )
             unique_url = cart.unique_url.first()
             if not unique_url:
@@ -307,13 +302,22 @@ class PaymentSuccessView(APIView):
                     from_email=admin_email,
                     recipient_list=[admin_email]
                 )
-                return Response({
-                    "message": "Payment successful.",
-                    "payment_id": payment.id,
-                    "transaction_id": payment.transaction_id,  
-                    "total_amount": payment.total_amount / 100,
-                    "payment_status": session.payment_status,
-                })
+                context = {
+                'payment': payment,
+                'payment_id': payment.id,
+                'transaction_id': payment.transaction_id,
+                "total_amount":payment.total_amount / 100,
+                'user': payment.user,
+            }
+                return render(request, 'success.html', context)
+                # return redirect(f"/success/{payment.id}/")
+                # return Response({
+                #     "message": "Payment successful.",
+                #     "payment_id": payment.id,
+                #     "transaction_id": payment.transaction_id,  
+                #     "total_amount": payment.total_amount / 100,
+                #     "payment_status": session.payment_status,
+                # })
             else:
                 return Response({"error": "Payment was not successful"}, status=status.HTTP_400_BAD_REQUEST)
         except Payment.DoesNotExist:
@@ -333,16 +337,26 @@ class PaymentCancelView(APIView):
             payment = Payment.objects.get(transaction_id=session_id)
             payment.status = "FAILED" 
             payment.save()
-            return JsonResponse({
-                "message": "Your payment was cancelled. Please try again if you wish to complete the payment.",
-                "payment_id": payment.id,
-                "status": payment.status,
-            })
+            context = {
+                'payment': payment,
+                'booking': payment.booking,
+                'package': payment.booking.package,
+                'user': payment.booking.user,
+            }
+            return render(request, 'cancel.html', context)
+            # return redirect(f"/cancel/{payment.id}/")
+            # return JsonResponse({
+            #     "message": "Your payment was cancelled. Please try again if you wish to complete the payment.",
+            #     "payment_id": payment.id,
+            #     "status": payment.status,
+            # })
         except Payment.DoesNotExist:
             return JsonResponse({"error": "Payment not found."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return JsonResponse({"errSuccessfullor": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+            return JsonResponse({"errorSuccessfullor": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 
   #feedback  
 class ContactQueryView(APIView):

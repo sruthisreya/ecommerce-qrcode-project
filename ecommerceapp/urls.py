@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterUser,ProtectedView,ContactQueryView,UniqueurlView,AddurlsTocartView,DeleteurlView,create_50_urls,Paymentcreateview,OpencartView,CustomTokenObtainPairView,DetailsView,PaymentCancelView,PaymentSuccessView
+from .views import RegisterUser,ProtectedView,ContactQueryView,UniqueurlView,AddurlsTocartView,DeleteurlView,DetailsgetView,create_50_urls,Paymentcreateview,OpencartView,CustomTokenObtainPairView,DetailsView,PaymentCancelView,PaymentSuccessView
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
@@ -25,8 +25,10 @@ urlpatterns = [
     path('payment/cancel/',PaymentCancelView.as_view(),name='paymentcancel'),
     # path('url/<str:url_id>/upload-image/',ImageUploadView.as_view(),name='upload-image'),
    
-    path('url/<str:url_id>/details',DetailsView.as_view(),name='DetailsView'),
+    path('url/<str:url_id>/details',DetailsgetView.as_view(),name='DetailsgetView'),
     path('url/<str:url_id>/update',DetailsView.as_view(),name='DetailsView'),
+
+
 
     # path('UniqueurlmanagementView/',UniqueurlmanagementView.as_view(),name='UniqueurlmanagementView'),
 ]

@@ -51,7 +51,7 @@ admin.site.register(UniqueURL,UniqueurlAdmin)
 
 
 class PaymentAdmin(admin.ModelAdmin):
-    list_display=['user','transaction_id','status','created_at','checkout_id']
+    list_display=['user','transaction_id','status','created_at','checkout_id','total_amount','cart']
 admin.site.register(Payment, PaymentAdmin)
 
 
