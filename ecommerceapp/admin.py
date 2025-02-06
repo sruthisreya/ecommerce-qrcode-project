@@ -46,7 +46,6 @@ class UniqueurlAdmin(admin.ModelAdmin):
     list_display=['user','created_at','cost','in_cart']
     actions=[generate_qr_codes]
     change_list_template = "urls/url.html"
-
 admin.site.register(UniqueURL,UniqueurlAdmin)
 
 
@@ -67,12 +66,12 @@ admin.site.register(CartItem, CartItemAdmin)
 
 
 class DetailsAdmin(admin.ModelAdmin):
-    list_display=['unique_url','title','description']
+    list_display=['id','unique_url','title','description']
 admin.site.register(Details,DetailsAdmin)
 
 
 class ImagesAdmin(admin.ModelAdmin):
-    list_display=['file','detail','created_at']
+    list_display=['id','file','detail','created_at']
 admin.site.register(Images,ImagesAdmin)
 
 
