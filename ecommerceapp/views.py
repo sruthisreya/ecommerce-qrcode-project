@@ -7,8 +7,6 @@ from rest_framework.response import Response
 from django.core.mail import send_mail
 from django.http import HttpResponseRedirect
 from rest_framework.parsers import MultiPartParser, FormParser
-from django.http import Http404
-
 from django.conf import settings
 import stripe
 from .permissions import IsOwnerOfUniqueUrl
@@ -73,7 +71,6 @@ class UniqueurlView(APIView):
         return Response(serializer.data)
     
 
-
 # add urls to cart
 class AddurlsTocartView(APIView):
     permission_classes = [IsAuthenticated]
@@ -103,8 +100,6 @@ class AddurlsTocartView(APIView):
             "quantity": cart_item.quantity,
             "added_urls": serialized_urls
         }, status=status.HTTP_201_CREATED)
-
-    
 
 
 class DeleteurlView(APIView):
@@ -172,7 +167,6 @@ class OpencartView(APIView):
     
 
 class DetailsView(APIView):
-
     permission_classes=[IsAuthenticated, IsOwnerOfUniqueUrl]
     authentication_classes=[JWTAuthentication]
 
@@ -185,14 +179,17 @@ class DetailsView(APIView):
             details_instance = serializer.save()
             return Response(DetailsSerializer(details_instance).data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     
 class DetailsgetView(APIView):
     permission_classes=[AllowAny]
+
     def get(self, request, url_id):
         unique_url = get_object_or_404(UniqueURL, id=url_id)
         details = get_object_or_404(Details, unique_url=unique_url)
         serializer = DetailsSerializer(details)
         return Response(serializer.data, status=status.HTTP_200_OK) 
+
 
 #payment
 class Paymentcreateview(APIView):
@@ -244,7 +241,6 @@ class Paymentcreateview(APIView):
             return Response({"error": "Cart not found or unauthorized access."}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
         
 
 class PaymentSuccessView(APIView):
@@ -326,7 +322,6 @@ class PaymentSuccessView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 class PaymentCancelView(APIView):
 
     def get(self, request):
@@ -339,9 +334,9 @@ class PaymentCancelView(APIView):
             payment.save()
             context = {
                 'payment': payment,
-                'booking': payment.booking,
-                'package': payment.booking.package,
-                'user': payment.booking.user,
+                'payment_id': payment.id,
+                'status': payment.status,
+                'user': payment.user,
             }
             return render(request, 'cancel.html', context)
             # return redirect(f"/cancel/{payment.id}/")
@@ -356,8 +351,6 @@ class PaymentCancelView(APIView):
             return JsonResponse({"errorSuccessfullor": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
-
   #feedback  
 class ContactQueryView(APIView):
     permission_classes=[AllowAny]
@@ -368,11 +361,4 @@ class ContactQueryView(APIView):
             serializer.save()
             return Response({"message":"your feedback has been submitted successfully"},status=status.HTTP_201_CREATED)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-    
-
-
-
-
-
-
 
