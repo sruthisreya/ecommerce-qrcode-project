@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.http import HttpResponseRedirect,HttpResponse
-# from django.urls import reverse
 import string
 import io
 import zipfile
@@ -8,8 +7,6 @@ from django.urls import path
 import qrcode
 from django.contrib import messages
 import random
-# from admin_extra_buttons import api
-# from admin_extra_buttons.api import button
 from .models import CustomUser,UniqueURL,Payment,ContactQuery,CartItem,Details,Images
 
 
@@ -32,11 +29,11 @@ def generate_qr_codes(modeladmin, request, queryset):
 
 
 class Useradmin(admin.ModelAdmin):
-    list_display=['username','email','phone_no']
+    list_display=['id','username','email','phone_no']
 admin.site.register(CustomUser,Useradmin)  
 
 
-def set_fixed_price(modeladmin,request,queryset):
+def set_fixed_price(modeladmin, request, queryset):
     fixed_price=100.0
     updated_count=queryset.update(cost=fixed_price)
     modeladmin.message_user(request, f'Successfully updated {updated_count} URL(s) to the fixed price of {fixed_price}')
@@ -44,29 +41,32 @@ def set_fixed_price(modeladmin,request,queryset):
 
 class UniqueurlAdmin(admin.ModelAdmin):
     list_display=['user','created_at','cost','in_cart']
+    list_filter=['in_cart','user']
     actions=[generate_qr_codes]
     change_list_template = "urls/url.html"
 admin.site.register(UniqueURL,UniqueurlAdmin)
 
 
 class PaymentAdmin(admin.ModelAdmin):
+    list_filter=['cart','status']
     list_display=['user','transaction_id','status','created_at','checkout_id','total_amount','cart']
 admin.site.register(Payment, PaymentAdmin)
 
 
 class ContactQueryAdmin(admin.ModelAdmin):
-    list_display=['name','email','message','created_at']
+    list_display=['id','name','email','message','created_at']
 admin.site.register(ContactQuery,ContactQueryAdmin)
 
 
 class CartItemAdmin(admin.ModelAdmin):
-    list_display=['user','quantity','total_price','is_closed']
+    list_display=['id','user','quantity','total_price','is_closed']
     filter_horizontal=['unique_url', ]
 admin.site.register(CartItem, CartItemAdmin)
 
 
 class DetailsAdmin(admin.ModelAdmin):
     list_display=['id','unique_url','title','description']
+    list_filter=['id']
 admin.site.register(Details,DetailsAdmin)
 
 

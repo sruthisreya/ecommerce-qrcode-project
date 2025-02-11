@@ -19,23 +19,24 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             raise ValidationError("Enter a valid email address.")
         return value
 
-
     def validate_phn_no(self, value):
 
         if not re.match(r'^\d{10}$', value):
             raise ValidationError("Phone number must be 10 digits.")
-        if CustomUser.objects.filter(phone_no=value).exists():
+        if CustomUser.objects.filter(phone_no=value).exists():     #prevent duplications
             raise ValidationError("A user with this phone number already exists.")
         return value
     
     
     def validate_username(self, value):
+
         if CustomUser.objects.filter(username=value).exists():
             raise ValidationError("A user with this username already exists.")
         return value
 
 
     def create(self,validated_data):
+
         user=CustomUser.objects.create_user(
             username=validated_data['username'],
             password=validated_data['password'],
@@ -64,10 +65,10 @@ class DetailsSerializer(serializers.ModelSerializer):
         fields=['unique_url','title','description','images']
 
     def create(self, validated_data):
-
             # Extract title and description from validated data
         title = validated_data.get('title', "")
         description = validated_data.get('description', "")
+
         details_instance = Details.objects.create(
             unique_url=validated_data['unique_url'],
             title=title,
@@ -76,17 +77,21 @@ class DetailsSerializer(serializers.ModelSerializer):
         image_data = self.context['request'].FILES.getlist('file')
         for image in image_data:
             Images.objects.create(detail=details_instance, file=image)
+
         return details_instance
+    
     def update(self, instance, validated_data):
 
         instance.title = validated_data.get('title', instance.title)
         instance.description = validated_data.get('description', instance.description)
         instance.save()
+
         image_data = self.context['request'].FILES.getlist('file')
         if image_data:
             Images.objects.filter(detail=instance).delete()
             for image in image_data:
                 Images.objects.create(detail=instance, file=image)
+
         return instance
  
 
@@ -95,7 +100,6 @@ class UniqueurlSerializer(serializers.ModelSerializer):
         model=UniqueURL
         fields=['id','created_at']
         # fields='__all__'
-
 
 
 class PaymentSerializer(serializers.ModelSerializer):
